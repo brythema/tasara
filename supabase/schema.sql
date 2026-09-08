@@ -141,17 +141,17 @@ create trigger on_auth_user_created
 create or replace function notify_new_seller()
 returns trigger as $$
 begin
-  -- Find all admin users
+  -- Find all admin users and insert notifications
   insert into public.notifications (recipient_id, type, title, message)
   select
     p.id,
     'new_seller_registration',
     'New Seller Registration',
-    'New seller registration: ' || coalesce(sp.profiles.full_name, 'A user') ||
+    'New seller registration: ' || coalesce(up.full_name, 'A user') ||
     ' has registered as a ' || upper(new.tier) || ' seller.',
     false
   from profiles p
-  join seller_profiles sp on sp.user_id = new.user_id
+  join profiles up on up.id = new.user_id
   where p.role = 'admin';
   return new;
 end;
@@ -268,37 +268,56 @@ create policy "System can insert activity logs"
 -- ----------------------------------------------------------
 -- 11. STORAGE BUCKETS
 -- ----------------------------------------------------------
--- Run these in Supabase Dashboard → Storage:
+-- Create these buckets manually in Supabase Dashboard → Storage:
+--   1. "government-ids" — Private bucket
+--   2. "product-images" — Public bucket
 --
--- Bucket 1: "government-ids"
---   - Private bucket
---   - RLS enabled
---   - Policy: admins can upload/view
---   - Policy: sellers can upload their own files
---
--- Bucket 2: "product-images"
---   - Public bucket (or private with signed URLs)
---   - RLS enabled
---
--- Storage policies (run in SQL):
---
--- Government IDs - Private
+-- Then run the policies below.
+-- ----------------------------------------------------------
+
+-- Helper function to extract owner UUID from file path
+-- Upload paths are: "sellers/{user_id}/{timestamp}.{ext}"
+-- Segment 1 = "sellers", Segment 2 = user_id
+create or replace function get_owner_from_path(obj_name text)
+returns uuid as $$
+begin
+  return split_part(obj_name, '/', 2)::uuid;
+end;
+$$ language plpgsql immutable;
+
+-- Government IDs - Private bucket
+-- Note: bucket must exist first. If bucket doesn't exist yet, these policies
+-- will error on creation. Create the bucket in Dashboard → Storage first,
+-- then re-run just the storage policies section.
 create policy "Admins can view government IDs"
   on storage.objects for select
-  using ( bucket_id = 'government-ids' and
-    exists (select 1 from profiles where id = auth.uid() and role = 'admin') );
+  using (
+    bucket_id = 'government-ids' and
+    exists (select 1 from profiles where id = auth.uid() and role = 'admin')
+  );
 
 create policy "Sellers can upload their own government ID"
   on storage.objects for insert
-  with check ( bucket_id = 'government-ids' and
-    auth.uid()::text = (split_part(path, '/', 1)) );
+  with check (
+    bucket_id = 'government-ids' and
+    auth.uid()::text = split_part(name, '/', 2)
+  );
 
 create policy "Sellers can view their own government ID"
   on storage.objects for select
-  using ( bucket_id = 'government-ids' and
-    auth.uid()::text = (split_part(path, '/', 1)) );
+  using (
+    bucket_id = 'government-ids' and
+    auth.uid()::text = split_part(name, '/', 2)
+  );
 
--- Product Images - Public
+create policy "Admins can manage government IDs"
+  on storage.objects for all
+  using (
+    bucket_id = 'government-ids' and
+    exists (select 1 from profiles where id = auth.uid() and role = 'admin')
+  );
+
+-- Product Images - Public bucket
 create policy "Anyone can view product images"
   on storage.objects for select
   using ( bucket_id = 'product-images' );
@@ -309,10 +328,14 @@ create policy "Sellers can upload product images"
 
 create policy "Sellers can update their product images"
   on storage.objects for update
-  using ( bucket_id = 'product-images' and
-    auth.uid()::text = (split_part(path, '/', 1)) );
+  using (
+    bucket_id = 'product-images' and
+    auth.uid()::text = split_part(name, '/', 2)
+  );
 
 create policy "Sellers can delete their product images"
   on storage.objects for delete
-  using ( bucket_id = 'product-images' and
-    auth.uid()::text = (split_part(path, '/', 1)) );
+  using (
+    bucket_id = 'product-images' and
+    auth.uid()::text = split_part(name, '/', 2)
+  );
