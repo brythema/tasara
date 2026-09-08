@@ -69,7 +69,7 @@ function formatDateTime(dateStr) {
 // Get initials from name
 function getInitials(name) {
   if (!name) return '?';
-  return name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+  return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
 }
 
 // Tier badge HTML
@@ -99,15 +99,21 @@ function roleBadge(role) {
   return `<span class="badge ${map[role] || 'badge-info'}">${role.toUpperCase()}</span>`;
 }
 
-// Show/hide element
-function show(id) { document.getElementById(id)?.classList.remove('hidden'); }
-function hide(id) { document.getElementById(id)?.classList.add('hidden'); }
-
-// Mobile menu toggle
+// Mobile menu toggle — single source of truth
 function toggleMobileMenu(open) {
   const overlay = document.getElementById('mobile-overlay');
   const nav = document.getElementById('mobile-nav');
-  if (open) {
+  if (open === undefined) {
+    // Toggle: check current state
+    const isOpen = nav?.classList.contains('open');
+    if (isOpen) {
+      overlay?.classList.remove('open');
+      nav?.classList.remove('open');
+    } else {
+      overlay?.classList.add('open');
+      nav?.classList.add('open');
+    }
+  } else if (open) {
     overlay?.classList.add('open');
     nav?.classList.add('open');
   } else {
@@ -122,3 +128,14 @@ document.addEventListener('click', (e) => {
   const nav = document.getElementById('mobile-nav');
   if (e.target === overlay) toggleMobileMenu(false);
 });
+
+// Export all helpers
+window.toast = toast;
+window.setLoading = setLoading;
+window.formatDate = formatDate;
+window.formatDateTime = formatDateTime;
+window.getInitials = getInitials;
+window.tierBadge = tierBadge;
+window.statusBadge = statusBadge;
+window.roleBadge = roleBadge;
+window.toggleMobileMenu = toggleMobileMenu;

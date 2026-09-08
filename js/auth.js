@@ -54,11 +54,12 @@ export async function resetPassword(email) {
   if (error) throw error;
 }
 
-// Get current user and their profile
+// Get current user and their profile — safely handles null user
 export async function getSessionUser() {
   const session = await getSession();
   if (!session) return null;
   const user = await getCurrentUser();
+  if (!user) return null;
   const profile = await getProfile(user.id);
   return { user, profile };
 }

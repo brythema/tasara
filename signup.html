@@ -20,8 +20,8 @@
 
       <!-- Account Type Toggle -->
       <div class="auth-toggle">
-        <button class="active" id="btn-buyer" onclick="switchAccountType('buyer')">Buyer</button>
-        <button id="btn-seller" onclick="switchAccountType('seller')">Seller</button>
+        <button class="active" type="button" id="btn-buyer" onclick="switchAccountType('buyer')">Buyer</button>
+        <button type="button" id="btn-seller" onclick="switchAccountType('seller')">Seller</button>
       </div>
 
       <!-- Buyer Registration -->
@@ -205,7 +205,7 @@
         if (val.length >= 10) strength++;
         if (/[A-Z]/.test(val)) strength++;
         if (/[0-9]/.test(val)) strength++;
-        if (/[^A-Za-z0-9]/.test(val)) strength++;
+        if (/[^\w]/.test(val)) strength++;
         const pct = Math.min(100, (strength / 5) * 100);
         bar.style.width = pct + '%';
         if (pct <= 40) bar.style.background = 'var(--clr-danger)';
@@ -218,11 +218,9 @@
   </script>
 
   <script type="module">
-    import { signUp, initAuthListeners } from './js/auth.js';
+    import { signUp } from './js/auth.js';
     import { getSupabase, uploadFile } from './js/supabase.js';
-    import { toast } from './js/ui.js';
-
-    initAuthListeners();
+    import { toast, setLoading } from './js/ui.js';
 
     // Redirect if already logged in
     getSupabase().auth.getSession().then(({ data }) => {
@@ -273,7 +271,7 @@
         // Create profile
         const { error: profileError } = await getSupabase()
           .from('profiles')
-          .insert([{
+          .upsert({
             id: data.user.id,
             full_name: name,
             email,
@@ -281,7 +279,7 @@
             address,
             role: 'buyer',
             account_status: 'active',
-          }]);
+          }, { onConflict: 'id' });
         if (profileError) throw profileError;
 
         toast('Account created! Check your email to verify.', 'success');
@@ -336,7 +334,7 @@
 
       setLoading(btn, true);
       try {
-        const { data, error } = await signUp(email, password, { full_name: name });
+        const { data, error } = await signUp(email, password, { full_name: name, role: 'seller' });
         if (error) throw error;
 
         // Upload government ID
@@ -346,15 +344,17 @@
         await uploadFile('government-ids', idPath, idFile);
 
         // Create profile
-        const { error: profileError } = await getSupabase().from('profiles').insert([{
-          id: data.user.id,
-          full_name: name,
-          email,
-          phone,
-          address,
-          role: 'seller',
-          account_status: 'active',
-        }]);
+        const { error: profileError } = await getSupabase()
+          .from('profiles')
+          .upsert({
+            id: data.user.id,
+            full_name: name,
+            email,
+            phone,
+            address,
+            role: 'seller',
+            account_status: 'active',
+          }, { onConflict: 'id' });
         if (profileError) throw profileError;
 
         // Create seller profile
@@ -375,18 +375,6 @@
         setLoading(btn, false);
       }
     });
-
-    function setLoading(btn, loading) {
-      if (!btn) return;
-      if (loading) {
-        btn.dataset.originalText = btn.innerHTML;
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner" style="border-top-color: #0b0f1a;"></span> Creating account…';
-      } else {
-        btn.disabled = false;
-        btn.innerHTML = btn.dataset.originalText || btn.textContent;
-      }
-    }
   </script>
 </body>
 </html>

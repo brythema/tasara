@@ -14,7 +14,7 @@
   <!-- Mobile Header -->
   <div class="mobile-header">
     <div class="nav-logo">Tasara</div>
-    <button class="hamburger" onclick="toggleMobileMenu()">☰</button>
+    <button class="hamburger" type="button" onclick="toggleMobileMenu()">☰</button>
   </div>
 
   <div class="dashboard-layout" id="dashboard-layout" style="display:none;">
@@ -24,7 +24,7 @@
       <nav class="sidebar-nav" id="sidebar-nav"></nav>
       <div class="sidebar-footer">
         <div class="sidebar-user" id="sidebar-user"></div>
-        <button class="sidebar-link" onclick="window.signOut()" style="margin-top:8px;color:var(--clr-danger);">
+        <button class="sidebar-link" type="button" onclick="signOut()" style="margin-top:8px;color:var(--clr-danger);">
           <span class="link-icon">🚪</span> Logout
         </button>
       </div>
@@ -37,7 +37,7 @@
       <nav class="sidebar-nav" id="mobile-nav-links"></nav>
       <div class="sidebar-footer">
         <div class="sidebar-user" id="mobile-sidebar-user"></div>
-        <button class="sidebar-link" onclick="window.signOut()" style="margin-top:8px;color:var(--clr-danger);">
+        <button class="sidebar-link" type="button" onclick="signOut()" style="margin-top:8px;color:var(--clr-danger);">
           <span class="link-icon">🚪</span> Logout
         </button>
       </div>
@@ -57,7 +57,7 @@
           <h1 id="dashboard-greeting">Welcome back</h1>
           <p id="dashboard-subtitle">Here's your overview</p>
         </div>
-        <button class="btn btn-primary" onclick="window.location.href='${CONFIG.TELEGRAM_COMMUNITY_URL}'">
+        <button class="btn btn-primary" type="button" onclick="window.location.href='${CONFIG.TELEGRAM_COMMUNITY_URL}'">
           📱 Join Community
         </button>
       </div>
@@ -71,7 +71,7 @@
               <h2 id="buyer-name" style="font-size:1.5rem;font-weight:700;"></h2>
               <p style="color:var(--clr-text-mid);margin-top:4px;" id="buyer-welcome-msg">You're all set. Start exploring!</p>
               <div style="margin-top:12px;">
-                <a href="#profile" class="btn btn-outline btn-sm" onclick="navigateTo('profile')">View Profile</a>
+                <button class="btn btn-outline btn-sm" type="button" onclick="navigateTo('profile')">View Profile</button>
               </div>
             </div>
           </div>
@@ -80,9 +80,9 @@
         <div class="card">
           <h3 style="margin-bottom:16px;">Quick Actions</h3>
           <div style="display:flex;gap:12px;flex-wrap:wrap;">
-            <button class="btn btn-outline" onclick="navigateTo('profile')">👤 My Profile</button>
-            <button class="btn btn-outline" onclick="navigateTo('settings')">⚙️ Settings</button>
-            <button class="btn btn-primary" onclick="window.location.href='${CONFIG.TELEGRAM_COMMUNITY_URL}'">📱 Join Telegram</button>
+            <button class="btn btn-outline" type="button" onclick="navigateTo('profile')">👤 My Profile</button>
+            <button class="btn btn-outline" type="button" onclick="navigateTo('settings')">⚙️ Settings</button>
+            <button class="btn btn-primary" type="button" onclick="window.location.href='${CONFIG.TELEGRAM_COMMUNITY_URL}'">📱 Join Telegram</button>
           </div>
         </div>
       </div>
@@ -99,7 +99,7 @@
               You'll be notified once your application is reviewed.
             </p>
             <div id="seller-tier-display" style="margin-bottom:16px;"></div>
-            <button class="btn btn-primary" onclick="window.location.href='${CONFIG.TELEGRAM_COMMUNITY_URL}'">
+            <button class="btn btn-primary" type="button" onclick="window.location.href='${CONFIG.TELEGRAM_COMMUNITY_URL}'">
               📱 Join Community While Waiting
             </button>
           </div>
@@ -144,10 +144,10 @@
           <div class="card">
             <h3 style="margin-bottom:16px;">Quick Actions</h3>
             <div style="display:flex;gap:12px;flex-wrap:wrap;">
-              <button class="btn btn-outline" onclick="navigateTo('profile')">👤 My Profile</button>
-              <button class="btn btn-outline" onclick="navigateTo('business')">🏪 My Business</button>
-              <button class="btn btn-outline" onclick="navigateTo('products')">📦 My Products</button>
-              <button class="btn btn-primary" onclick="window.location.href='${CONFIG.TELEGRAM_COMMUNITY_URL}'">📱 Join Telegram</button>
+              <button class="btn btn-outline" type="button" onclick="navigateTo('profile')">👤 My Profile</button>
+              <button class="btn btn-outline" type="button" onclick="navigateTo('business')">🏪 My Business</button>
+              <button class="btn btn-outline" type="button" onclick="navigateTo('products')">📦 My Products</button>
+              <button class="btn btn-primary" type="button" onclick="window.location.href='${CONFIG.TELEGRAM_COMMUNITY_URL}'">📱 Join Telegram</button>
             </div>
           </div>
         </div>
@@ -161,7 +161,7 @@
           <h1>My Profile</h1>
           <p>View and manage your account information</p>
         </div>
-        <button class="btn btn-outline btn-sm" onclick="navigateTo('settings')">⚙️ Settings</button>
+        <button class="btn btn-outline btn-sm" type="button" onclick="navigateTo('settings')">⚙️ Settings</button>
       </div>
 
       <div class="profile-layout">
@@ -231,7 +231,7 @@
         <!-- Edit Profile -->
         <div class="card" style="margin-bottom:24px;">
           <h3>Edit Profile</h3>
-          <form id="edit-profile-form" style="margin-top:20px;">
+          <form id="edit-profile-form" novalidate>
             <div class="form-group">
               <label class="form-label" for="edit-name">Full Name</label>
               <input type="text" id="edit-name" class="form-input" required>
@@ -252,7 +252,7 @@
         <!-- Change Password (Supabase Auth) -->
         <div class="card" style="margin-bottom:24px;">
           <h3>Change Password</h3>
-          <form id="change-password-form" style="margin-top:20px;">
+          <form id="change-password-form" novalidate>
             <div class="form-group">
               <label class="form-label" for="current-password">Current Password</label>
               <input type="password" id="current-password" class="form-input" required>
@@ -276,7 +276,7 @@
           <p style="color:var(--clr-text-mid);font-size:0.875rem;margin:12px 0 20px;">
             Deactivating your account will prevent you from logging in. Your data is preserved and can be restored by contacting support.
           </p>
-          <button class="btn btn-danger" onclick="deactivateAccount()">Deactivate Account</button>
+          <button class="btn btn-danger" type="button" onclick="deactivateAccount()">Deactivate Account</button>
         </div>
       </div>
     </section>
@@ -301,7 +301,7 @@
       </div>
 
       <div class="card">
-        <form id="business-form">
+        <form id="business-form" novalidate>
           <div class="form-group">
             <label class="form-label" for="biz-name">Business Name</label>
             <input type="text" id="biz-name" class="form-input" placeholder="e.g. Chioma's Fashion Hub">
@@ -312,7 +312,7 @@
           </div>
           <div class="form-group">
             <label class="form-label" for="biz-description">What We Sell / Description</label>
-            <textarea id="biz-description" class="form-input" placeholder="Describe your products or services..."></textarea>
+            <textarea id="biz-description" class="form-input" placeholder="Describe your products or services..." rows="3"></textarea>
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
             <div class="form-group">
@@ -337,7 +337,7 @@
           <h1>My Products</h1>
           <p>Manage your product listings</p>
         </div>
-        <button class="btn btn-primary" onclick="showAddProductModal()">+ Add Product</button>
+        <button class="btn btn-primary" type="button" onclick="showAddProductModal()">+ Add Product</button>
       </div>
 
       <div id="products-list" class="product-grid"></div>
@@ -347,7 +347,7 @@
         <div class="mobile-overlay" style="position:absolute;inset:0;" onclick="closeProductModal()"></div>
         <div class="card glass-strong" style="position:relative;z-index:1;max-width:500px;width:100%;max-height:90vh;overflow-y:auto;">
           <h3 id="product-modal-title" style="margin-bottom:20px;">Add Product</h3>
-          <form id="product-form">
+          <form id="product-form" novalidate>
             <input type="hidden" id="product-id">
             <div class="form-group">
               <label class="form-label" for="product-name">Product Name</label>
@@ -372,7 +372,7 @@
             </div>
             <div id="product-form-error" class="form-error hidden"></div>
             <div style="display:flex;gap:12px;margin-top:20px;">
-              <button type="button" class="btn btn-ghost" onclick="closeProductModal()">Cancel</button>
+              <button type="button" class="btn btn-ghost" type="button" onclick="closeProductModal()">Cancel</button>
               <button type="submit" class="btn btn-primary" id="product-submit-btn">Save Product</button>
             </div>
           </form>
@@ -398,7 +398,7 @@
           <h1>Notifications</h1>
           <p>Alerts and updates</p>
         </div>
-        <button class="btn btn-ghost btn-sm" onclick="markAllRead()">Mark all read</button>
+        <button class="btn btn-ghost btn-sm" type="button" onclick="markAllRead()">Mark all read</button>
       </div>
       <div class="notification-list" id="notifications-list"></div>
     </section>
@@ -408,23 +408,28 @@
   <script type="module">
     import { initDashboard } from './js/dashboard.js';
     import { initAuthListeners } from './js/auth.js';
+    import { getSupabase } from './js/supabase.js';
+    import { updateBuyerProfile, submitSellerChangeRequest } from './js/profile.js';
+    import { addProduct, updateProduct, deleteProduct } from './js/products.js';
+    import { toast, setLoading } from './js/ui.js';
+    import { getSessionUser } from './js/auth.js';
+    import { getPendingChangeRequests, getNotifications } from './js/supabase.js';
 
     initAuthListeners();
     initDashboard();
 
     // ============================================================
-    // Navigation helper
+    // Navigation
     // ============================================================
     window.navigateTo = function(page) {
-      const layout = document.getElementById('dashboard-layout');
-      if (layout) layout.style.display = 'grid';
       document.querySelectorAll('.page-section').forEach(el => el.classList.add('hidden'));
       const target = document.getElementById(`page-${page}`);
       if (target) target.classList.remove('hidden');
+
       document.querySelectorAll('.sidebar-link').forEach(link => {
         link.classList.toggle('active', link.dataset.page === page);
       });
-      // Call page init
+
       const initFn = window[`initPage_${page}`];
       if (initFn) initFn();
       toggleMobileMenu(false);
@@ -471,12 +476,11 @@
           document.getElementById('seller-review-state').classList.add('hidden');
           document.getElementById('seller-status-msg').textContent = '✓ Account Approved';
 
-          import('./js/supabase.js').then(m => m.getProducts(seller.user_id)).then(products => {
-            document.getElementById('stat-products').textContent = products?.length || 0;
-          });
-          import('./js/supabase.js').then(m => m.getPendingChangeRequests(seller.user_id)).then(changes => {
-            document.getElementById('stat-pending-changes').textContent = changes?.length || 0;
-          });
+          const products = await getProducts(seller.user_id);
+          document.getElementById('stat-products').textContent = products?.length || 0;
+
+          const changes = await getPendingChangeRequests(seller.user_id);
+          document.getElementById('stat-pending-changes').textContent = changes?.length || 0;
         }
       }
     };
@@ -540,7 +544,6 @@
       const seller = window.tasaraSellerProfile();
       if (!seller) return;
 
-      const { getProducts } = await import('./js/supabase.js');
       const products = await getProducts(seller.user_id);
       const container = document.getElementById('products-list');
 
@@ -559,8 +562,8 @@
             <div class="product-desc">${escHtml(p.description || '')}</div>
             <div class="product-price">${escHtml(p.price || '')}</div>
             <div style="display:flex;gap:8px;margin-top:12px;">
-              <button class="btn btn-outline btn-sm" onclick="editProduct('${p.id}')" style="flex:1;">Edit</button>
-              <button class="btn btn-danger btn-sm" onclick="deleteProductConfirm('${p.id}')" style="flex:1;">Delete</button>
+              <button class="btn btn-outline btn-sm" type="button" onclick="editProduct('${p.id}')">Edit</button>
+              <button class="btn btn-danger btn-sm" type="button" onclick="deleteProductConfirm('${p.id}')">Delete</button>
             </div>
           </div>
         </div>
@@ -571,7 +574,6 @@
       const seller = window.tasaraSellerProfile();
       if (!seller) return;
 
-      const { getPendingChangeRequests } = await import('./js/supabase.js');
       const requests = await getPendingChangeRequests(seller.user_id);
       const container = document.getElementById('seller-pending-list');
 
@@ -599,8 +601,7 @@
     };
 
     window.initPage_notifications = async function() {
-      const { getNotifications } = await import('./js/supabase.js');
-      const { user } = await import('./js/auth.js').then(m => m.getSessionUser());
+      const { user } = await getSessionUser();
       if (!user) return;
 
       const notifications = await getNotifications(user.id);
@@ -636,14 +637,12 @@
     // Form handlers
     // ============================================================
 
-    import { getSupabase } from './js/supabase.js';
-    import { updateBuyerProfile, submitSellerChangeRequest } from './js/profile.js';
-    import { addProduct, updateProduct, deleteProduct } from './js/products.js';
-
     // Profile form submit
     document.getElementById('edit-profile-form').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const { user } = await import('./js/auth.js').then(m => m.getSessionUser());
+      const { user } = await getSessionUser();
+      if (!user) return;
+
       const name = document.getElementById('edit-name').value.trim();
       const phone = document.getElementById('edit-phone').value.trim();
       const address = document.getElementById('edit-address').value.trim();
@@ -735,7 +734,7 @@
 
       setLoading(btn, true);
       try {
-        const { user } = await import('./js/auth.js').then(m => m.getSessionUser());
+        const { user } = await getSessionUser();
         await submitSellerChangeRequest(user.id, changes);
         window.location.reload();
       } catch (err) {
@@ -849,7 +848,7 @@
     window.deactivateAccount = async function() {
       if (!confirm('Are you sure you want to deactivate your account? This cannot be easily undone.')) return;
       try {
-        const { user } = await import('./js/auth.js').then(m => m.getSessionUser());
+        const { user } = await getSessionUser();
         const { error } = await getSupabase()
           .from('profiles')
           .update({ account_status: 'deactivated' })
@@ -877,23 +876,6 @@
     // ============================================================
     // Helpers
     // ============================================================
-    function setLoading(btn, loading) {
-      if (!btn) return;
-      if (loading) {
-        btn.dataset.originalText = btn.innerHTML;
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner" style="border-top-color:#0b0f1a;"></span> Saving…';
-      } else {
-        btn.disabled = false;
-        btn.innerHTML = btn.dataset.originalText || btn.textContent;
-      }
-    }
-
-    function escHtml(str) {
-      if (str == null) return '';
-      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    }
-
     function formatChangeLabel(key) {
       const labels = {
         full_name: 'Full Name', phone: 'Phone', address: 'Address',
@@ -901,6 +883,11 @@
         description: 'Description', opening_time: 'Opening Time', closing_time: 'Closing Time',
       };
       return labels[key] || key;
+    }
+
+    function escHtml(str) {
+      if (str == null) return '';
+      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     }
   </script>
 </body>

@@ -2,9 +2,9 @@
 // TASARA — Dashboard Module (Buyer & Seller)
 // ============================================================
 
-import { getSupabase, getSession, getProfile, getSellerProfile, getProducts, getPendingChangeRequests, getNotifications, markNotificationRead, markAllNotificationsRead } from './supabase.js';
-import { getSession as getAuthSession, redirectToDashboard, signOut as authSignOut } from './auth.js';
-import { toast, formatDate, formatDateTime, getInitials, tierBadge, statusBadge } from './ui.js';
+import { getSupabase, getSession, getProfile, getSellerProfile, getProducts, getPendingChangeRequests, getNotifications } from './supabase.js';
+import { getSession as getAuthSession, signOut as authSignOut } from './auth.js';
+import { toast, setLoading, formatDate, formatDateTime, getInitials, tierBadge, statusBadge } from './ui.js';
 
 let currentUser = null;
 let userProfile = null;
@@ -40,31 +40,28 @@ export async function initDashboard() {
       sellerProfile = await getSellerProfile(currentUser.id);
     }
 
-    // Load notifications
+    // Load notifications for this user
     const notifications = await getNotifications(currentUser.id);
     window.tasaraNotifications = notifications;
     window.tasaraUnreadCount = notifications.filter(n => !n.read).length;
+
+    // Show the dashboard layout
+    const layout = document.getElementById('dashboard-layout');
+    if (layout) layout.style.display = 'grid';
 
     renderSidebar();
     renderTopNav();
     renderMobileSidebar();
 
-    // Route to correct page content based on hash or default
+    // Route to correct page content based on hash
     const hash = window.location.hash.replace('#', '');
-    const page = hash || getFallbackPage();
+    const page = hash || 'dashboard';
     routeDashboardPage(page);
 
   } catch (err) {
     console.error('Dashboard init error:', err);
     window.location.href = '/login.html';
   }
-}
-
-function getFallbackPage() {
-  if (!userProfile) return 'dashboard';
-  if (userProfile.role === 'admin') return 'dashboard';
-  if (userProfile.role === 'seller') return 'dashboard';
-  return 'dashboard';
 }
 
 async function signOutRedirect() {
@@ -167,7 +164,7 @@ function renderSidebar() {
 }
 
 function renderMobileSidebar() {
-  const mobileNav = document.getElementById('mobile-nav');
+  const mobileNav = document.getElementById('mobile-nav-links');
   const mobileUser = document.getElementById('mobile-sidebar-user');
   if (!mobileNav || !mobileUser) return;
 
@@ -179,6 +176,18 @@ function renderMobileSidebar() {
       <div class="sidebar-user-role">${userProfile.role.toUpperCase()}</div>
     </div>
   `;
+
+  // Mirror sidebar links to mobile nav
+  const sidebarLinks = document.getElementById('sidebar-nav');
+  if (sidebarLinks) {
+    mobileNav.innerHTML = sidebarLinks.innerHTML;
+    mobileNav.querySelectorAll('.sidebar-link').forEach(link => {
+      link.addEventListener('click', () => {
+        routeDashboardPage(link.dataset.page);
+        toggleMobileMenu(false);
+      });
+    });
+  }
 }
 
 function renderTopNav() {
@@ -203,10 +212,6 @@ function renderTopNav() {
 }
 
 function routeDashboardPage(page) {
-  // Show/hide mobile nav based on role
-  const mobileNav = document.getElementById('mobile-nav');
-  const layout = document.getElementById('dashboard-layout');
-
   // Hide all page sections
   document.querySelectorAll('.page-section').forEach(el => el.classList.add('hidden'));
 
@@ -242,54 +247,6 @@ window.signOut = async function () {
 window.toggleUserMenu = function () {
   const choice = confirm('Sign out of Tasara?');
   if (choice) window.signOut();
-};
-
-// Toggle mobile menu
-window.toggleMobileMenu = function (open) {
-  const overlay = document.getElementById('mobile-overlay');
-  const nav = document.getElementById('mobile-nav');
-  if (open === undefined) {
-    const isOpen = nav?.classList.contains('open');
-    if (isOpen) {
-      overlay?.classList.remove('open');
-      nav?.classList.remove('open');
-    } else {
-      overlay?.classList.add('open');
-      nav?.classList.add('open');
-    }
-  } else if (open) {
-    overlay?.classList.add('open');
-    nav?.classList.add('open');
-  } else {
-    overlay?.classList.remove('open');
-    nav?.classList.remove('open');
-  }
-};
-
-// Notification reading
-window.readNotification = async function (id) {
-  await markNotificationRead(id);
-  if (window.tasaraNotifications) {
-    window.tasaraNotifications = window.tasaraNotifications.map(n =>
-      n.id === id ? { ...n, read: true } : n
-    );
-  }
-  // Re-render notifications if on that page
-  const notifPage = document.getElementById('page-notifications');
-  if (notifPage && !notifPage.classList.contains('hidden')) {
-    window.initPage_notifications?.();
-  }
-};
-
-window.markAllRead = async function () {
-  if (!currentUser) return;
-  await markAllNotificationsRead(currentUser.id);
-  if (window.tasaraNotifications) {
-    window.tasaraNotifications = window.tasaraNotifications.map(n => ({ ...n, read: true }));
-    window.tasaraUnreadCount = 0;
-  }
-  toast('All notifications marked as read', 'success');
-  window.initPage_notifications?.();
 };
 
 // Expose for use in page scripts

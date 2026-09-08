@@ -85,6 +85,17 @@
       `;
     }
 
+    // Clear errors on input focus
+    document.querySelectorAll('.form-input').forEach(input => {
+      input.addEventListener('focus', () => {
+        const form = input.closest('form');
+        if (form) {
+          const err = form.querySelector('.form-error');
+          if (err) err.classList.add('hidden');
+        }
+      });
+    });
+
     document.getElementById('setup-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const name = document.getElementById('setup-name').value.trim();
@@ -113,14 +124,19 @@
         errEl.classList.remove('hidden');
         return;
       }
+      if (!email.includes('@')) {
+        errEl.textContent = 'Please enter a valid email address.';
+        errEl.classList.remove('hidden');
+        return;
+      }
 
       setLoading(btn, true);
       try {
-        const { data, error } = await signUp(email, password, { full_name: name });
+        const { data, error } = await signUp(email, password, { full_name: name, role: 'admin' });
         if (error) throw error;
 
         // Create admin profile
-        const { error: profileError } = await getSupabase().from('profiles').insert([{
+        const { error: profileError } = await getSupabase().from('profiles').upsert({
           id: data.user.id,
           full_name: name,
           email,
@@ -128,7 +144,7 @@
           address,
           role: 'admin',
           account_status: 'active',
-        }]);
+        }, { onConflict: 'id' });
         if (profileError) throw profileError;
 
         toast('Admin account created successfully!', 'success');

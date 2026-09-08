@@ -12,7 +12,7 @@ create extension if not exists "uuid-ossp";
 create table if not exists profiles (
   id uuid references auth.users(id) on delete cascade primary key,
   full_name text not null,
-  email text not null,
+  email text not null unique,
   phone text,
   address text,
   role text not null check (role in ('buyer', 'seller', 'admin')),
@@ -118,6 +118,8 @@ create trigger seller_profiles_updated_at before update on seller_profiles
 
 -- ----------------------------------------------------------
 -- 8. TRIGGER: Create profile on signup
+-- Uses upsert to avoid conflicts when the signup form
+-- also inserts a profile for the same user.
 -- ----------------------------------------------------------
 create or replace function public.handle_new_user()
 returns trigger as $$
@@ -129,7 +131,8 @@ begin
     new.email,
     coalesce(new.raw_user_meta_data->>'role', 'buyer'),
     'active'
-  );
+  )
+  on conflict (id) do nothing;
   return new;
 end;
 $$ language plpgsql security definer;

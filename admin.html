@@ -13,7 +13,7 @@
 <body>
   <div class="mobile-header">
     <div class="nav-logo">Tasara</div>
-    <button class="hamburger" onclick="toggleMobileMenu()">☰</button>
+    <button class="hamburger" type="button" onclick="toggleMobileMenu()">☰</button>
   </div>
 
   <div class="dashboard-layout" id="dashboard-layout" style="display:none;">
@@ -22,7 +22,7 @@
       <nav class="sidebar-nav" id="sidebar-nav"></nav>
       <div class="sidebar-footer">
         <div class="sidebar-user" id="sidebar-user"></div>
-        <button class="sidebar-link" onclick="window.signOut()" style="margin-top:8px;color:var(--clr-danger);">
+        <button class="sidebar-link" type="button" onclick="signOut()" style="margin-top:8px;color:var(--clr-danger);">
           <span class="link-icon">🚪</span> Logout
         </button>
       </div>
@@ -34,7 +34,7 @@
       <nav class="sidebar-nav" id="mobile-nav-links"></nav>
       <div class="sidebar-footer">
         <div class="sidebar-user" id="mobile-sidebar-user"></div>
-        <button class="sidebar-link" onclick="window.signOut()" style="margin-top:8px;color:var(--clr-danger);">
+        <button class="sidebar-link" type="button" onclick="signOut()" style="margin-top:8px;color:var(--clr-danger);">
           <span class="link-icon">🚪</span> Logout
         </button>
       </div>
@@ -79,7 +79,7 @@
     <section id="page-notifications" class="page-section hidden">
       <div class="dashboard-header">
         <div><h1>Notifications</h1><p>Platform alerts and updates</p></div>
-        <button class="btn btn-ghost btn-sm" onclick="markAllRead()">Mark all read</button>
+        <button class="btn btn-ghost btn-sm" type="button" onclick="markAllRead()">Mark all read</button>
       </div>
       <div class="notification-list" id="notifications-list"></div>
     </section>
@@ -93,7 +93,7 @@
           <input type="url" id="admin-telegram-url" class="form-input" value="https://t.me/tasara_community">
           <div class="form-hint">This link appears in the "Join Community" button for all users.</div>
         </div>
-        <button class="btn btn-primary" onclick="saveAdminSettings()">Save Settings</button>
+        <button class="btn btn-primary" type="button" onclick="saveAdminSettings()">Save Settings</button>
       </div>
     </section>
 
@@ -103,7 +103,7 @@
     import { initDashboard } from './js/dashboard.js';
     import { initAuthListeners } from './js/auth.js';
     import { getSupabase } from './js/supabase.js';
-    import { toast, setLoading } from './js/ui.js';
+    import { toast } from './js/ui.js';
     import {
       loadAdminStats, loadSellerApplications, loadUsers,
       loadPendingChangeRequests, loadProducts, loadNotifications
@@ -140,7 +140,7 @@
 
     function renderSidebar() {
       const html = adminLinks.map(l => `
-        <button class="sidebar-link ${l.page === 'dashboard' ? 'active' : ''}" data-page="${l.page}">
+        <button class="sidebar-link" data-page="${l.page}">
           <span class="link-icon">${l.icon}</span> ${l.label}
         </button>
       `).join('');
@@ -183,7 +183,6 @@
     window.loadPendingChangeRequests = loadPendingChangeRequests;
     window.loadProducts = loadProducts;
     window.loadNotifications = loadNotifications;
-
     window.saveAdminSettings = function() {
       const url = document.getElementById('admin-telegram-url').value.trim();
       if (url) {

@@ -3,7 +3,7 @@
 // ============================================================
 
 import { getSupabase, getAllSellerProfiles, getAllBuyerProfiles, getAllPendingChangeRequests, getProducts, getNotifications, markNotificationRead, markAllNotificationsRead } from './supabase.js';
-import { getSessionUser, signOut } from './auth.js';
+import { getSessionUser } from './auth.js';
 import { toast, formatDate, formatDateTime, getInitials, tierBadge, statusBadge } from './ui.js';
 import { applySellerChanges, rejectSellerChange } from './profile.js';
 
@@ -129,7 +129,7 @@ async function viewGovernmentId(path) {
     const url = await getSignedUrl('government-ids', path);
     window.open(url, '_blank');
   } catch (e) {
-    toast('Failed to load government ID', 'error');
+    toast('Failed to load government ID. Make sure the government-ids bucket exists.', 'error');
   }
 }
 
@@ -332,6 +332,8 @@ export async function loadNotifications() {
   if (!container) return;
 
   const { user } = await getSessionUser();
+  if (!user) return;
+
   const notifications = await getNotifications(user.id);
 
   container.innerHTML = '';
@@ -370,7 +372,7 @@ export async function loadProducts() {
 
   const { data: sellers } = await getSupabase()
     .from('seller_profiles')
-    .select('user_id, profiles!seller_profiles_user_id_fkey(full_name)');
+    .select('user_id, profiles:user_id(full_name)');
 
   let html = '';
   for (const seller of (sellers || [])) {
@@ -402,7 +404,7 @@ export async function loadProducts() {
   container.innerHTML = html || '<p style="color:var(--clr-text-mid);text-align:center;padding:40px 0;">No products yet.</p>';
 }
 
-// Deactivate account (admin action)
+// Deactivate account (admin action) — userId first, then userName for confirm message
 window.deactivateAccount = async function (userId, userName) {
   if (!confirm(`Deactivate ${userName}'s account? They will no longer be able to log in.`)) return;
   try {

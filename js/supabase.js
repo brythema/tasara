@@ -56,11 +56,11 @@ export async function getSellerProfile(userId) {
   return data;
 }
 
-// Fetch all seller profiles (admin)
+// Fetch all seller profiles with joined profile data (admin)
 export async function getAllSellerProfiles() {
   const { data, error } = await getSupabase()
     .from('seller_profiles')
-    .select('*, profiles!seller_profiles_user_id_fkey(full_name, email, phone, address)');
+    .select('*, profiles:user_id(full_name, email, phone, address)');
   if (error) throw error;
   return data || [];
 }
@@ -98,11 +98,18 @@ export async function getPendingChangeRequests(sellerId) {
   return data || [];
 }
 
-// Fetch all pending change requests (admin)
+// Fetch all pending change requests with seller info (admin)
 export async function getAllPendingChangeRequests() {
   const { data, error } = await getSupabase()
     .from('seller_change_requests')
-    .select('*, seller_profiles!seller_change_requests_seller_id_fkey(tier, user_id, profiles!seller_profiles_user_id_fkey(full_name, email))')
+    .select(`
+      *,
+      seller_profiles!seller_change_requests_profile_fkey (
+        tier,
+        user_id,
+        profiles!seller_profiles_user_id_fkey(full_name, email)
+      )
+    `)
     .eq('status', 'pending')
     .order('submitted_at', { ascending: false });
   if (error) throw error;
@@ -147,19 +154,20 @@ export async function uploadFile(bucket, filePath, file) {
   return data;
 }
 
-// Get signed URL for private file
+// Get signed URL for private file (1 hour expiry)
 export async function getSignedUrl(bucket, path) {
   const { data, error } = await getSupabase().storage
     .from(bucket)
-    .createSignedUrl(path, 3600); // 1 hour
+    .createSignedUrl(path, 3600);
   if (error) throw error;
   return data.signedUrl;
 }
 
 // Get public URL for a storage file
 export function getPublicUrl(bucket, path) {
-  const { data } = getSupabase().storage
+  const { data, error } = getSupabase().storage
     .from(bucket)
     .getPublicUrl(path);
+  if (error) throw error;
   return data?.publicUrl;
 }

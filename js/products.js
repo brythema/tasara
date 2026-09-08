@@ -18,10 +18,10 @@ export async function addProduct(sellerId, data) {
       const path = `${sellerId}/${timestamp}.${ext}`;
       await uploadFile(PRODUCT_BUCKET, path, file);
       // Get public URL for product images
-      const { data: urlData } = getSupabase().storage
+      const publicUrl = getSupabase().storage
         .from(PRODUCT_BUCKET)
         .getPublicUrl(path);
-      imagePaths.push(urlData.publicUrl);
+      imagePaths.push(publicUrl.data?.publicUrl || '');
     }
   }
 
@@ -30,7 +30,7 @@ export async function addProduct(sellerId, data) {
     name: data.name,
     description: data.description,
     price: data.price,
-    image_paths: imagePaths,
+    image_paths: imagePaths.filter(url => url), // remove empty URLs
   }]).select().single();
 
   if (error) throw error;
@@ -54,10 +54,10 @@ export async function updateProduct(sellerId, productId, data) {
       const ext = file.name.split('.').pop();
       const path = `${sellerId}/${timestamp}.${ext}`;
       await uploadFile(PRODUCT_BUCKET, path, file);
-      const { data: urlData } = getSupabase().storage
+      const publicUrl = getSupabase().storage
         .from(PRODUCT_BUCKET)
         .getPublicUrl(path);
-      imagePaths.push(urlData.publicUrl);
+      imagePaths.push(publicUrl.data?.publicUrl || '');
     }
   }
 
@@ -66,7 +66,7 @@ export async function updateProduct(sellerId, productId, data) {
       name: data.name,
       description: data.description,
       price: data.price,
-      image_paths: imagePaths,
+      image_paths: imagePaths.filter(url => url),
     })
     .eq('id', productId)
     .eq('seller_id', sellerId);

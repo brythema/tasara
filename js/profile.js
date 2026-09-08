@@ -2,7 +2,7 @@
 // TASARA — Profile Module
 // ============================================================
 
-import { getSupabase, getProfile, getSellerProfile } from './supabase.js';
+import { getSupabase, getSellerProfile } from './supabase.js';
 import { toast } from './ui.js';
 
 // Update buyer profile (immediate, no approval needed)

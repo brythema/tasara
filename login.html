@@ -76,29 +76,46 @@
   </div>
 
   <script type="module">
-    import { signIn, redirectToDashboard, initAuthListeners } from './js/auth.js';
-    import { getProfile } from './js/supabase.js';
+    import { signIn, redirectToDashboard } from './js/auth.js';
+    import { getSupabase, getProfile } from './js/supabase.js';
     import { toast, setLoading } from './js/ui.js';
 
-    initAuthListeners();
-
     // Redirect if already logged in
-    import('./js/supabase.js').then(m => {
-      m.getSupabase().auth.getSession().then(({ data }) => {
-        if (data.session) m.getProfile(data.session.user.id).then(p => {
-          if (p) redirectToDashboard(p);
+    getSupabase().auth.getSession().then(({ data }) => {
+      if (data.session) {
+        getProfile(data.session.user.id).then(profile => {
+          if (profile) redirectToDashboard(profile);
         });
-      });
+      }
     });
 
     // Toggle between user and admin login
     document.getElementById('show-admin-login').addEventListener('click', () => {
       document.getElementById('user-login-section').classList.add('hidden');
       document.getElementById('admin-login-section').classList.remove('hidden');
+      // Clear errors when switching
+      document.getElementById('user-login-error').classList.add('hidden');
+      document.getElementById('admin-login-error').classList.add('hidden');
     });
     document.getElementById('back-to-user-login').addEventListener('click', () => {
       document.getElementById('admin-login-section').classList.add('hidden');
       document.getElementById('user-login-section').classList.remove('hidden');
+      document.getElementById('admin-login-error').classList.add('hidden');
+    });
+
+    // Clear errors on input focus
+    document.querySelectorAll('.form-input').forEach(input => {
+      input.addEventListener('focus', () => {
+        const errEl = input.closest('.form-group')?.nextElementSibling?.classList?.contains('form-error')
+          ? input.closest('.form-group').nextElementSibling
+          : null;
+        // Clear any visible error in the same form
+        const form = input.closest('form');
+        if (form) {
+          const err = form.querySelector('.form-error');
+          if (err) err.classList.add('hidden');
+        }
+      });
     });
 
     // User login
@@ -120,7 +137,7 @@
       setLoading(btn, true);
       try {
         await signIn(email, password);
-        const profile = await getProfile((await import('./js/supabase.js')).getSupabase().auth.currentUser.id);
+        const profile = await getProfile(getSupabase().auth.currentUser.id);
         redirectToDashboard(profile);
       } catch (err) {
         errEl.textContent = err.message || 'Failed to log in. Check your credentials.';
@@ -149,14 +166,14 @@
       setLoading(btn, true);
       try {
         await signIn(email, password);
-        const { getSupabase, getProfile } = await import('./js/supabase.js');
         const profile = await getProfile(getSupabase().auth.currentUser.id);
         if (profile?.role === 'admin') {
           window.location.href = '/admin.html';
         } else {
           errEl.textContent = 'This account is not authorized as an admin.';
           errEl.classList.remove('hidden');
-          await (await import('./js/auth.js')).signOut();
+          const { signOut } = await import('./js/auth.js');
+          await signOut();
         }
       } catch (err) {
         errEl.textContent = err.message || 'Failed to log in.';
