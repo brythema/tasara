@@ -9,6 +9,7 @@
     "start": "npx serve . -l 3000"
   },
   "devDependencies": {
+    "playwright": "^1.63.0",
     "serve": "^14.2.0"
   }
 }

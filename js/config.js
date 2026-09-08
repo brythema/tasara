@@ -3,9 +3,9 @@
 // ============================================================
 
 const CONFIG = {
-  // Supabase — replace with your project credentials
-  SUPABASE_URL: 'YOUR_SUPABASE_URL',
-  SUPABASE_ANON_KEY: 'YOUR_SUPABASE_ANON_KEY',
+  // Supabase — filled from user input
+  SUPABASE_URL: 'https://ukyqjsmpqfdhfwhhujzo.supabase.co',
+  SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVreXFqc21wcWZkaGZ3aGh1anpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4ODAyMzEsImV4cCI6MjEwNDQ1NjIzMX0.OHMdwwVXIIunNUqmRHwQHOV6uI8GqxIRGQsCnYx4KHI',
 
   // Telegram community link — replace with real link
   TELEGRAM_COMMUNITY_URL: 'https://t.me/tasara_community',
