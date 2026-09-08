@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Log In — Tasara</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/design-system.css">
+  <link rel="stylesheet" href="css/pages.css">
+</head>
+<body>
+  <div class="auth-page">
+    <div class="auth-card glass">
+      <div class="auth-logo">
+        <h1>Tasara</h1>
+        <p>Your gateway to community</p>
+      </div>
+
+      <!-- User Login Form -->
+      <div id="user-login-section">
+        <div class="auth-header">
+          <h2>Welcome back</h2>
+          <p>Log in to your account</p>
+        </div>
+        <form id="user-login-form" novalidate>
+          <div class="form-group">
+            <label class="form-label" for="user-email">Email</label>
+            <input type="email" id="user-email" class="form-input" placeholder="you@example.com" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="user-password">Password</label>
+            <input type="password" id="user-password" class="form-input" placeholder="••••••••" required>
+          </div>
+          <div id="user-login-error" class="form-error hidden"></div>
+          <button type="submit" class="btn btn-primary btn-block btn-lg" id="user-login-btn">
+            Log In
+          </button>
+        </form>
+        <div class="auth-footer mt-md">
+          Don't have an account? <a href="signup.html">Sign up</a>
+        </div>
+        <div class="admin-link">
+          <button type="button" id="show-admin-login">Admin Login</button>
+        </div>
+      </div>
+
+      <!-- Admin Login Form -->
+      <div id="admin-login-section" class="hidden">
+        <div class="auth-header">
+          <h2>Admin Login</h2>
+          <p>Restricted access only</p>
+        </div>
+        <form id="admin-login-form" novalidate>
+          <div class="form-group">
+            <label class="form-label" for="admin-email">Email</label>
+            <input type="email" id="admin-email" class="form-input" placeholder="admin@tasara.ng" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="admin-password">Password</label>
+            <input type="password" id="admin-password" class="form-input" placeholder="••••••••" required>
+          </div>
+          <div id="admin-login-error" class="form-error hidden"></div>
+          <button type="submit" class="btn btn-primary btn-block btn-lg" id="admin-login-btn">
+            Log In as Admin
+          </button>
+        </form>
+        <div class="auth-footer mt-md">
+          <button type="button" id="back-to-user-login" style="background:none;border:none;color:var(--clr-primary);cursor:pointer;font-size:0.875rem;">
+            ← Back to User Login
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { signIn, redirectToDashboard, initAuthListeners } from './js/auth.js';
+    import { getProfile } from './js/supabase.js';
+    import { toast, setLoading } from './js/ui.js';
+
+    initAuthListeners();
+
+    // Redirect if already logged in
+    import('./js/supabase.js').then(m => {
+      m.getSupabase().auth.getSession().then(({ data }) => {
+        if (data.session) m.getProfile(data.session.user.id).then(p => {
+          if (p) redirectToDashboard(p);
+        });
+      });
+    });
+
+    // Toggle between user and admin login
+    document.getElementById('show-admin-login').addEventListener('click', () => {
+      document.getElementById('user-login-section').classList.add('hidden');
+      document.getElementById('admin-login-section').classList.remove('hidden');
+    });
+    document.getElementById('back-to-user-login').addEventListener('click', () => {
+      document.getElementById('admin-login-section').classList.add('hidden');
+      document.getElementById('user-login-section').classList.remove('hidden');
+    });
+
+    // User login
+    document.getElementById('user-login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('user-email').value.trim();
+      const password = document.getElementById('user-password').value;
+      const errEl = document.getElementById('user-login-error');
+      const btn = document.getElementById('user-login-btn');
+
+      errEl.classList.add('hidden');
+
+      if (!email || !password) {
+        errEl.textContent = 'Please fill in all fields.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+
+      setLoading(btn, true);
+      try {
+        await signIn(email, password);
+        const profile = await getProfile((await import('./js/supabase.js')).getSupabase().auth.currentUser.id);
+        redirectToDashboard(profile);
+      } catch (err) {
+        errEl.textContent = err.message || 'Failed to log in. Check your credentials.';
+        errEl.classList.remove('hidden');
+      } finally {
+        setLoading(btn, false);
+      }
+    });
+
+    // Admin login
+    document.getElementById('admin-login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('admin-email').value.trim();
+      const password = document.getElementById('admin-password').value;
+      const errEl = document.getElementById('admin-login-error');
+      const btn = document.getElementById('admin-login-btn');
+
+      errEl.classList.add('hidden');
+
+      if (!email || !password) {
+        errEl.textContent = 'Please fill in all fields.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+
+      setLoading(btn, true);
+      try {
+        await signIn(email, password);
+        const { getSupabase, getProfile } = await import('./js/supabase.js');
+        const profile = await getProfile(getSupabase().auth.currentUser.id);
+        if (profile?.role === 'admin') {
+          window.location.href = '/admin.html';
+        } else {
+          errEl.textContent = 'This account is not authorized as an admin.';
+          errEl.classList.remove('hidden');
+          await (await import('./js/auth.js')).signOut();
+        }
+      } catch (err) {
+        errEl.textContent = err.message || 'Failed to log in.';
+        errEl.classList.remove('hidden');
+      } finally {
+        setLoading(btn, false);
+      }
+    });
+  </script>
+</body>
+</html>

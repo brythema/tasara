@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — Tasara</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/design-system.css">
+  <link rel="stylesheet" href="css/pages.css">
+</head>
+<body>
+  <!-- Mobile Header -->
+  <div class="mobile-header">
+    <div class="nav-logo">Tasara</div>
+    <button class="hamburger" onclick="toggleMobileMenu()">☰</button>
+  </div>
+
+  <div class="dashboard-layout" id="dashboard-layout" style="display:none;">
+    <!-- Desktop Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">Tasara</div>
+      <nav class="sidebar-nav" id="sidebar-nav"></nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-user" id="sidebar-user"></div>
+        <button class="sidebar-link" onclick="window.signOut()" style="margin-top:8px;color:var(--clr-danger);">
+          <span class="link-icon">🚪</span> Logout
+        </button>
+      </div>
+    </aside>
+
+    <!-- Mobile Nav Overlay -->
+    <div class="mobile-overlay" id="mobile-overlay" onclick="toggleMobileMenu(false)"></div>
+    <div class="mobile-nav" id="mobile-nav">
+      <div class="sidebar-logo">Tasara</div>
+      <nav class="sidebar-nav" id="mobile-nav-links"></nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-user" id="mobile-sidebar-user"></div>
+        <button class="sidebar-link" onclick="window.signOut()" style="margin-top:8px;color:var(--clr-danger);">
+          <span class="link-icon">🚪</span> Logout
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Nav (mobile) -->
+  <div class="nav" id="top-nav"></div>
+
+  <!-- Main Content -->
+  <main class="dashboard-main">
+
+    <!-- ===== DASHBOARD HOME ===== -->
+    <section id="page-dashboard" class="page-section hidden">
+      <div class="dashboard-header">
+        <div>
+          <h1 id="dashboard-greeting">Welcome back</h1>
+          <p id="dashboard-subtitle">Here's your overview</p>
+        </div>
+        <button class="btn btn-primary" onclick="window.location.href='${CONFIG.TELEGRAM_COMMUNITY_URL}'">
+          📱 Join Community
+        </button>
+      </div>
+
+      <!-- Buyer Dashboard Content -->
+      <div id="buyer-dashboard-content" class="hidden">
+        <div class="card" style="margin-bottom:24px;">
+          <div style="display:flex;align-items:center;gap:20px;">
+            <div class="avatar avatar-lg" id="buyer-avatar"></div>
+            <div>
+              <h2 id="buyer-name" style="font-size:1.5rem;font-weight:700;"></h2>
+              <p style="color:var(--clr-text-mid);margin-top:4px;" id="buyer-welcome-msg">You're all set. Start exploring!</p>
+              <div style="margin-top:12px;">
+                <a href="#profile" class="btn btn-outline btn-sm" onclick="navigateTo('profile')">View Profile</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 style="margin-bottom:16px;">Quick Actions</h3>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;">
+            <button class="btn btn-outline" onclick="navigateTo('profile')">👤 My Profile</button>
+            <button class="btn btn-outline" onclick="navigateTo('settings')">⚙️ Settings</button>
+            <button class="btn btn-primary" onclick="window.location.href='${CONFIG.TELEGRAM_COMMUNITY_URL}'">📱 Join Telegram</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Seller Dashboard Content -->
+      <div id="seller-dashboard-content" class="hidden">
+        <!-- Pending Approval State -->
+        <div id="seller-pending-state" class="hidden">
+          <div class="card" style="text-align:center;padding:48px 24px;">
+            <div style="font-size:3rem;margin-bottom:16px;">🕐</div>
+            <h2 style="margin-bottom:8px;">Pending Approval</h2>
+            <p style="color:var(--clr-text-mid);max-width:400px;margin:0 auto 24px;">
+              Your seller application has been submitted and is awaiting admin approval.
+              You'll be notified once your application is reviewed.
+            </p>
+            <div id="seller-tier-display" style="margin-bottom:16px;"></div>
+            <button class="btn btn-primary" onclick="window.location.href='${CONFIG.TELEGRAM_COMMUNITY_URL}'">
+              📱 Join Community While Waiting
+            </button>
+          </div>
+        </div>
+
+        <!-- Pending Review State (after submitting changes) -->
+        <div id="seller-review-state" class="hidden">
+          <div class="card" style="text-align:center;padding:48px 24px;margin-bottom:24px;">
+            <div style="font-size:3rem;margin-bottom:16px;">🔄</div>
+            <h2 style="margin-bottom:8px;">Changes Pending Approval</h2>
+            <p style="color:var(--clr-text-mid);max-width:400px;margin:0 auto;">
+              Your updated information has been submitted and is awaiting admin review.
+              Your current information remains active.
+            </p>
+          </div>
+        </div>
+
+        <!-- Approved Seller State -->
+        <div id="seller-approved-state" class="hidden">
+          <div class="card" style="margin-bottom:24px;">
+            <div style="display:flex;align-items:center;gap:20px;">
+              <div class="avatar avatar-lg" id="seller-avatar"></div>
+              <div>
+                <h2 id="seller-name" style="font-size:1.5rem;font-weight:700;"></h2>
+                <p style="color:var(--clr-text-mid);margin-top:4px;" id="seller-status-msg">✓ Account Approved</p>
+                <div id="seller-tier-badge" style="margin-top:8px;"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-label">My Products</div>
+              <div class="stat-value" id="stat-products">0</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Pending Changes</div>
+              <div class="stat-value" id="stat-pending-changes">0</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3 style="margin-bottom:16px;">Quick Actions</h3>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;">
+              <button class="btn btn-outline" onclick="navigateTo('profile')">👤 My Profile</button>
+              <button class="btn btn-outline" onclick="navigateTo('business')">🏪 My Business</button>
+              <button class="btn btn-outline" onclick="navigateTo('products')">📦 My Products</button>
+              <button class="btn btn-primary" onclick="window.location.href='${CONFIG.TELEGRAM_COMMUNITY_URL}'">📱 Join Telegram</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== PROFILE ===== -->
+    <section id="page-profile" class="page-section hidden">
+      <div class="dashboard-header">
+        <div>
+          <h1>My Profile</h1>
+          <p>View and manage your account information</p>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="navigateTo('settings')">⚙️ Settings</button>
+      </div>
+
+      <div class="profile-layout">
+        <div class="card profile-hero">
+          <div class="avatar avatar-lg" id="profile-avatar"></div>
+          <h2 id="profile-name"></h2>
+          <p id="profile-email" style="color:var(--clr-text-mid);"></p>
+          <div id="profile-role-badge" style="margin-top:8px;"></div>
+          <div id="profile-status-badge" style="margin-top:8px;"></div>
+        </div>
+
+        <div class="card profile-details">
+          <div>
+            <div class="card-header">
+              <div class="card-title">Personal Information</div>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Full Name</span>
+              <span class="detail-value" id="profile-full-name"></span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Email</span>
+              <span class="detail-value" id="profile-email-display"></span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Phone</span>
+              <span class="detail-value" id="profile-phone"></span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Address</span>
+              <span class="detail-value" id="profile-address"></span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Account Status</span>
+              <span class="detail-value" id="profile-account-status"></span>
+            </div>
+          </div>
+
+          <!-- Seller-only details -->
+          <div id="seller-profile-details" class="hidden">
+            <div class="card-header">
+              <div class="card-title">Seller Information</div>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Seller Tier</span>
+              <span class="detail-value" id="profile-tier"></span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Approval Status</span>
+              <span class="detail-value" id="profile-approval-status"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SETTINGS ===== -->
+    <section id="page-settings" class="page-section hidden">
+      <div class="dashboard-header">
+        <div>
+          <h1>Settings</h1>
+          <p>Manage your account preferences</p>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <!-- Edit Profile -->
+        <div class="card" style="margin-bottom:24px;">
+          <h3>Edit Profile</h3>
+          <form id="edit-profile-form" style="margin-top:20px;">
+            <div class="form-group">
+              <label class="form-label" for="edit-name">Full Name</label>
+              <input type="text" id="edit-name" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="edit-phone">Phone Number</label>
+              <input type="tel" id="edit-phone" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="edit-address">Address</label>
+              <input type="text" id="edit-address" class="form-input" required>
+            </div>
+            <div id="edit-profile-error" class="form-error hidden"></div>
+            <button type="submit" class="btn btn-primary" id="save-profile-btn">Save Changes</button>
+          </form>
+        </div>
+
+        <!-- Change Password (Supabase Auth) -->
+        <div class="card" style="margin-bottom:24px;">
+          <h3>Change Password</h3>
+          <form id="change-password-form" style="margin-top:20px;">
+            <div class="form-group">
+              <label class="form-label" for="current-password">Current Password</label>
+              <input type="password" id="current-password" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="new-password">New Password</label>
+              <input type="password" id="new-password" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="confirm-new-password">Confirm New Password</label>
+              <input type="password" id="confirm-new-password" class="form-input" required>
+            </div>
+            <div id="change-password-error" class="form-error hidden"></div>
+            <button type="submit" class="btn btn-outline" id="change-password-btn">Update Password</button>
+          </form>
+        </div>
+
+        <!-- Deactivate Account -->
+        <div class="card">
+          <h3 style="color:var(--clr-danger);">Danger Zone</h3>
+          <p style="color:var(--clr-text-mid);font-size:0.875rem;margin:12px 0 20px;">
+            Deactivating your account will prevent you from logging in. Your data is preserved and can be restored by contacting support.
+          </p>
+          <button class="btn btn-danger" onclick="deactivateAccount()">Deactivate Account</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SELLER: MY BUSINESS ===== -->
+    <section id="page-business" class="page-section hidden">
+      <div class="dashboard-header">
+        <div>
+          <h1>My Business</h1>
+          <p>Manage your business information (changes require admin approval)</p>
+        </div>
+      </div>
+
+      <div id="business-pending-warning" class="card hidden" style="margin-bottom:24px;background:rgba(245,158,11,0.08);border-color:rgba(245,158,11,0.2);">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <span style="font-size:1.5rem;">🔄</span>
+          <div>
+            <div style="font-weight:600;">Pending Admin Review</div>
+            <div style="font-size:0.875rem;color:var(--clr-text-mid);">Your previous business changes are awaiting approval. You can submit new changes, but they will also need review.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <form id="business-form">
+          <div class="form-group">
+            <label class="form-label" for="biz-name">Business Name</label>
+            <input type="text" id="biz-name" class="form-input" placeholder="e.g. Chioma's Fashion Hub">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="biz-location">Shop Location</label>
+            <input type="text" id="biz-location" class="form-input" placeholder="e.g. Computer Village, Ikeja">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="biz-description">What We Sell / Description</label>
+            <textarea id="biz-description" class="form-input" placeholder="Describe your products or services..."></textarea>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div class="form-group">
+              <label class="form-label" for="biz-opening">Opening Time</label>
+              <input type="time" id="biz-opening" class="form-input">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="biz-closing">Closing Time</label>
+              <input type="time" id="biz-closing" class="form-input">
+            </div>
+          </div>
+          <div id="business-error" class="form-error hidden"></div>
+          <button type="submit" class="btn btn-primary" id="save-business-btn">Save Changes (Requires Approval)</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- ===== SELLER: MY PRODUCTS ===== -->
+    <section id="page-products" class="page-section hidden">
+      <div class="dashboard-header">
+        <div>
+          <h1>My Products</h1>
+          <p>Manage your product listings</p>
+        </div>
+        <button class="btn btn-primary" onclick="showAddProductModal()">+ Add Product</button>
+      </div>
+
+      <div id="products-list" class="product-grid"></div>
+
+      <!-- Add/Edit Product Modal -->
+      <div id="product-modal" class="hidden" style="position:fixed;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;padding:24px;">
+        <div class="mobile-overlay" style="position:absolute;inset:0;" onclick="closeProductModal()"></div>
+        <div class="card glass-strong" style="position:relative;z-index:1;max-width:500px;width:100%;max-height:90vh;overflow-y:auto;">
+          <h3 id="product-modal-title" style="margin-bottom:20px;">Add Product</h3>
+          <form id="product-form">
+            <input type="hidden" id="product-id">
+            <div class="form-group">
+              <label class="form-label" for="product-name">Product Name</label>
+              <input type="text" id="product-name" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="product-desc">Description</label>
+              <textarea id="product-desc" class="form-input" rows="3"></textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="product-price">Price</label>
+              <input type="text" id="product-price" class="form-input" placeholder="e.g. ₦5,000">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Product Images (1-2)</label>
+              <div class="file-upload" onclick="document.getElementById('product-images').click()">
+                <input type="file" id="product-images" accept="image/jpeg,image/jpg,image/png" multiple onchange="handleProductImages(this)">
+                <div class="upload-icon">📷</div>
+                <div class="upload-text" id="product-images-text">Click to upload images</div>
+                <div class="upload-hint">JPG or PNG — Max 5 MB each</div>
+              </div>
+            </div>
+            <div id="product-form-error" class="form-error hidden"></div>
+            <div style="display:flex;gap:12px;margin-top:20px;">
+              <button type="button" class="btn btn-ghost" onclick="closeProductModal()">Cancel</button>
+              <button type="submit" class="btn btn-primary" id="product-submit-btn">Save Product</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== PENDING CHANGES ===== -->
+    <section id="page-pending-changes" class="page-section hidden">
+      <div class="dashboard-header">
+        <div>
+          <h1>Pending Changes</h1>
+          <p>Track your submitted changes</p>
+        </div>
+      </div>
+      <div id="seller-pending-list"></div>
+    </section>
+
+    <!-- ===== NOTIFICATIONS ===== -->
+    <section id="page-notifications" class="page-section hidden">
+      <div class="dashboard-header">
+        <div>
+          <h1>Notifications</h1>
+          <p>Alerts and updates</p>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="markAllRead()">Mark all read</button>
+      </div>
+      <div class="notification-list" id="notifications-list"></div>
+    </section>
+
+  </main>
+
+  <script type="module">
+    import { initDashboard } from './js/dashboard.js';
+    import { initAuthListeners } from './js/auth.js';
+
+    initAuthListeners();
+    initDashboard();
+
+    // ============================================================
+    // Navigation helper
+    // ============================================================
+    window.navigateTo = function(page) {
+      const layout = document.getElementById('dashboard-layout');
+      if (layout) layout.style.display = 'grid';
+      document.querySelectorAll('.page-section').forEach(el => el.classList.add('hidden'));
+      const target = document.getElementById(`page-${page}`);
+      if (target) target.classList.remove('hidden');
+      document.querySelectorAll('.sidebar-link').forEach(link => {
+        link.classList.toggle('active', link.dataset.page === page);
+      });
+      // Call page init
+      const initFn = window[`initPage_${page}`];
+      if (initFn) initFn();
+      toggleMobileMenu(false);
+    };
+
+    // ============================================================
+    // Page init functions
+    // ============================================================
+
+    window.initPage_dashboard = async function() {
+      const profile = window.tasaraUserProfile();
+      const seller = window.tasaraSellerProfile();
+
+      document.getElementById('buyer-dashboard-content').classList.add('hidden');
+      document.getElementById('seller-dashboard-content').classList.add('hidden');
+
+      if (!profile) return;
+
+      if (profile.role === 'buyer') {
+        document.getElementById('buyer-dashboard-content').classList.remove('hidden');
+        const avatar = document.getElementById('buyer-avatar');
+        avatar.textContent = profile.full_name ? profile.full_name.split(' ').map(n => n[0]).join('').slice(0, 2) : '?';
+        document.getElementById('buyer-name').textContent = profile.full_name || 'Buyer';
+      } else if (profile.role === 'seller' && seller) {
+        document.getElementById('seller-dashboard-content').classList.remove('hidden');
+        const avatar = document.getElementById('seller-avatar');
+        avatar.textContent = profile.full_name ? profile.full_name.split(' ').map(n => n[0]).join('').slice(0, 2) : '?';
+        document.getElementById('seller-name').textContent = profile.full_name || 'Seller';
+
+        document.getElementById('seller-tier-display').innerHTML = seller.tier ? `<div style="display:flex;justify-content:center;">${tierBadge(seller.tier)}</div>` : '';
+        document.getElementById('seller-tier-badge').innerHTML = seller.tier ? tierBadge(seller.tier) : '';
+
+        if (seller.approval_status === 'pending') {
+          document.getElementById('seller-pending-state').classList.remove('hidden');
+          document.getElementById('seller-approved-state').classList.add('hidden');
+          document.getElementById('seller-review-state').classList.add('hidden');
+        } else if (seller.approval_status === 'pending-review') {
+          document.getElementById('seller-pending-state').classList.add('hidden');
+          document.getElementById('seller-approved-state').classList.add('hidden');
+          document.getElementById('seller-review-state').classList.remove('hidden');
+        } else {
+          document.getElementById('seller-pending-state').classList.add('hidden');
+          document.getElementById('seller-approved-state').classList.remove('hidden');
+          document.getElementById('seller-review-state').classList.add('hidden');
+          document.getElementById('seller-status-msg').textContent = '✓ Account Approved';
+
+          import('./js/supabase.js').then(m => m.getProducts(seller.user_id)).then(products => {
+            document.getElementById('stat-products').textContent = products?.length || 0;
+          });
+          import('./js/supabase.js').then(m => m.getPendingChangeRequests(seller.user_id)).then(changes => {
+            document.getElementById('stat-pending-changes').textContent = changes?.length || 0;
+          });
+        }
+      }
+    };
+
+    window.initPage_profile = async function() {
+      const profile = window.tasaraUserProfile();
+      const seller = window.tasaraSellerProfile();
+      if (!profile) return;
+
+      const avatar = document.getElementById('profile-avatar');
+      avatar.textContent = profile.full_name ? profile.full_name.split(' ').map(n => n[0]).join('').slice(0, 2) : '?';
+      document.getElementById('profile-name').textContent = profile.full_name || '—';
+      document.getElementById('profile-email').textContent = profile.email || '—';
+      document.getElementById('profile-email-display').textContent = profile.email || '—';
+      document.getElementById('profile-full-name').textContent = profile.full_name || '—';
+      document.getElementById('profile-phone').textContent = profile.phone || '—';
+      document.getElementById('profile-address').textContent = profile.address || '—';
+      document.getElementById('profile-role-badge').innerHTML = roleBadge(profile.role);
+      document.getElementById('profile-account-status').innerHTML = statusBadge(profile.account_status);
+
+      if (profile.role === 'seller' && seller) {
+        document.getElementById('seller-profile-details').classList.remove('hidden');
+        document.getElementById('profile-tier').innerHTML = seller.tier ? tierBadge(seller.tier) : '—';
+        document.getElementById('profile-approval-status').innerHTML = statusBadge(seller.approval_status);
+      } else {
+        document.getElementById('seller-profile-details').classList.add('hidden');
+      }
+    };
+
+    window.initPage_settings = async function() {
+      const profile = window.tasaraUserProfile();
+      if (!profile) return;
+      document.getElementById('edit-name').value = profile.full_name || '';
+      document.getElementById('edit-phone').value = profile.phone || '';
+      document.getElementById('edit-address').value = profile.address || '';
+    };
+
+    window.initPage_business = async function() {
+      const seller = window.tasaraSellerProfile();
+      if (!seller) return;
+
+      const warning = document.getElementById('business-pending-warning');
+      if (seller.approval_status === 'pending') {
+        warning.classList.remove('hidden');
+        return;
+      }
+      if (seller.approval_status === 'pending-review') {
+        warning.classList.remove('hidden');
+      } else {
+        warning.classList.add('hidden');
+      }
+
+      document.getElementById('biz-name').value = seller.business_name || '';
+      document.getElementById('biz-location').value = seller.business_location || '';
+      document.getElementById('biz-description').value = seller.description || '';
+      document.getElementById('biz-opening').value = seller.opening_time || '';
+      document.getElementById('biz-closing').value = seller.closing_time || '';
+    };
+
+    window.initPage_products = async function() {
+      const seller = window.tasaraSellerProfile();
+      if (!seller) return;
+
+      const { getProducts } = await import('./js/supabase.js');
+      const products = await getProducts(seller.user_id);
+      const container = document.getElementById('products-list');
+
+      if (products.length === 0) {
+        container.innerHTML = '<p style="color:var(--clr-text-mid);grid-column:1/-1;text-align:center;padding:40px 0;">No products yet. Add your first product!</p>';
+        return;
+      }
+
+      container.innerHTML = products.map(p => `
+        <div class="product-card">
+          <div class="product-img">
+            ${p.image_paths?.[0] ? `<img src="${escHtml(p.image_paths[0])}" alt="${escHtml(p.name)}">` : '📷'}
+          </div>
+          <div class="product-body">
+            <div class="product-name">${escHtml(p.name)}</div>
+            <div class="product-desc">${escHtml(p.description || '')}</div>
+            <div class="product-price">${escHtml(p.price || '')}</div>
+            <div style="display:flex;gap:8px;margin-top:12px;">
+              <button class="btn btn-outline btn-sm" onclick="editProduct('${p.id}')" style="flex:1;">Edit</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteProductConfirm('${p.id}')" style="flex:1;">Delete</button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    };
+
+    window.initPage_pending_changes = async function() {
+      const seller = window.tasaraSellerProfile();
+      if (!seller) return;
+
+      const { getPendingChangeRequests } = await import('./js/supabase.js');
+      const requests = await getPendingChangeRequests(seller.user_id);
+      const container = document.getElementById('seller-pending-list');
+
+      if (requests.length === 0) {
+        container.innerHTML = '<p style="color:var(--clr-text-mid);text-align:center;padding:40px 0;">No pending changes.</p>';
+        return;
+      }
+
+      container.innerHTML = requests.map(r => `
+        <div class="card" style="margin-bottom:16px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <span class="badge badge-warning">Pending</span>
+            <span style="font-size:0.813rem;color:var(--clr-text-dim);">${formatDateTime(r.submitted_at)}</span>
+          </div>
+          ${Object.entries(r.changes || {}).map(([key, newVal]) => {
+            const oldVal = r.old_values?.[key] ?? '(empty)';
+            return `<div class="change-item">
+              <div><div style="font-size:0.75rem;color:var(--clr-text-dim);text-transform:uppercase;">${formatChangeLabel(key)}</div><div class="change-old">${escHtml(String(oldVal))}</div></div>
+              <div class="change-arrow">→</div>
+              <div><div style="font-size:0.75rem;color:var(--clr-text-dim);text-transform:uppercase;">${formatChangeLabel(key)}</div><div class="change-new">${escHtml(String(newVal))}</div></div>
+            </div>`;
+          }).join('')}
+        </div>
+      `).join('');
+    };
+
+    window.initPage_notifications = async function() {
+      const { getNotifications } = await import('./js/supabase.js');
+      const { user } = await import('./js/auth.js').then(m => m.getSessionUser());
+      if (!user) return;
+
+      const notifications = await getNotifications(user.id);
+      const container = document.getElementById('notifications-list');
+
+      if (notifications.length === 0) {
+        container.innerHTML = '<p style="color:var(--clr-text-mid);text-align:center;padding:40px 0;">No notifications.</p>';
+        return;
+      }
+
+      const icons = {
+        new_seller_registration: '🆕',
+        buyer_profile_updated: '👤',
+        seller_change_pending: '🔄',
+        seller_approved: '✓',
+        seller_rejected: '✕',
+        account_deactivated: '⚠',
+      };
+
+      container.innerHTML = notifications.map(n => `
+        <div class="notification-item ${n.read ? '' : 'unread'}" onclick="readNotification('${n.id}')">
+          <div class="notification-icon">${icons[n.type] || '🔔'}</div>
+          <div class="notification-body">
+            <div class="notification-title">${escHtml(n.title)}</div>
+            <div class="notification-message">${escHtml(n.message)}</div>
+            <div class="notification-time">${formatDateTime(n.created_at)}</div>
+          </div>
+        </div>
+      `).join('');
+    };
+
+    // ============================================================
+    // Form handlers
+    // ============================================================
+
+    import { getSupabase } from './js/supabase.js';
+    import { updateBuyerProfile, submitSellerChangeRequest } from './js/profile.js';
+    import { addProduct, updateProduct, deleteProduct } from './js/products.js';
+
+    // Profile form submit
+    document.getElementById('edit-profile-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const { user } = await import('./js/auth.js').then(m => m.getSessionUser());
+      const name = document.getElementById('edit-name').value.trim();
+      const phone = document.getElementById('edit-phone').value.trim();
+      const address = document.getElementById('edit-address').value.trim();
+      const errEl = document.getElementById('edit-profile-error');
+      const btn = document.getElementById('save-profile-btn');
+
+      errEl.classList.add('hidden');
+      if (!name || !phone || !address) {
+        errEl.textContent = 'Please fill in all fields.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+
+      setLoading(btn, true);
+      try {
+        const updates = { full_name: name, phone, address };
+        const profile = window.tasaraUserProfile();
+        if (profile?.role === 'buyer') {
+          await updateBuyerProfile(user.id, updates);
+        } else if (profile?.role === 'seller') {
+          await submitSellerChangeRequest(user.id, updates);
+        }
+        window.location.reload();
+      } catch (err) {
+        errEl.textContent = err.message || 'Failed to save changes.';
+        errEl.classList.remove('hidden');
+      } finally {
+        setLoading(btn, false);
+      }
+    });
+
+    // Change password
+    document.getElementById('change-password-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const current = document.getElementById('current-password').value;
+      const newPw = document.getElementById('new-password').value;
+      const confirm = document.getElementById('confirm-new-password').value;
+      const errEl = document.getElementById('change-password-error');
+      const btn = document.getElementById('change-password-btn');
+
+      errEl.classList.add('hidden');
+      if (!current || !newPw || !confirm) {
+        errEl.textContent = 'Please fill in all fields.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+      if (newPw !== confirm) {
+        errEl.textContent = 'New passwords do not match.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+      if (newPw.length < 6) {
+        errEl.textContent = 'Password must be at least 6 characters.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+
+      setLoading(btn, true);
+      try {
+        const { error } = await getSupabase().auth.updateUser({ password: newPw });
+        if (error) throw error;
+        toast('Password updated successfully!', 'success');
+        document.getElementById('change-password-form').reset();
+      } catch (err) {
+        errEl.textContent = err.message || 'Failed to update password.';
+        errEl.classList.remove('hidden');
+      } finally {
+        setLoading(btn, false);
+      }
+    });
+
+    // Business form submit (seller)
+    document.getElementById('business-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const seller = window.tasaraSellerProfile();
+      if (!seller) return;
+
+      const changes = {
+        business_name: document.getElementById('biz-name').value.trim(),
+        business_location: document.getElementById('biz-location').value.trim(),
+        description: document.getElementById('biz-description').value.trim(),
+        opening_time: document.getElementById('biz-opening').value,
+        closing_time: document.getElementById('biz-closing').value,
+      };
+
+      const errEl = document.getElementById('business-error');
+      const btn = document.getElementById('save-business-btn');
+      errEl.classList.add('hidden');
+
+      setLoading(btn, true);
+      try {
+        const { user } = await import('./js/auth.js').then(m => m.getSessionUser());
+        await submitSellerChangeRequest(user.id, changes);
+        window.location.reload();
+      } catch (err) {
+        errEl.textContent = err.message || 'Failed to submit changes.';
+        errEl.classList.remove('hidden');
+      } finally {
+        setLoading(btn, false);
+      }
+    });
+
+    // Product modal
+    let editingProductId = null;
+    let pendingProductImages = [];
+
+    window.showAddProductModal = function() {
+      editingProductId = null;
+      pendingProductImages = [];
+      document.getElementById('product-modal-title').textContent = 'Add Product';
+      document.getElementById('product-form').reset();
+      document.getElementById('product-images-text').textContent = 'Click to upload images';
+      document.getElementById('product-id').value = '';
+      document.getElementById('product-form-error').classList.add('hidden');
+      document.getElementById('product-modal').classList.remove('hidden');
+    };
+
+    window.closeProductModal = function() {
+      document.getElementById('product-modal').classList.add('hidden');
+    };
+
+    window.handleProductImages = function(input) {
+      const files = Array.from(input.files).slice(0, 2);
+      pendingProductImages = files;
+      document.getElementById('product-images-text').textContent =
+        files.length > 0 ? `✓ ${files.length} image(s) selected` : 'Click to upload images';
+    };
+
+    window.editProduct = async function(productId) {
+      const seller = window.tasaraSellerProfile();
+      if (!seller) return;
+
+      const { data: product } = await getSupabase()
+        .from('products')
+        .select('*')
+        .eq('id', productId)
+        .eq('seller_id', seller.user_id)
+        .single();
+
+      if (!product) { toast('Product not found', 'error'); return; }
+
+      editingProductId = productId;
+      pendingProductImages = [];
+      document.getElementById('product-modal-title').textContent = 'Edit Product';
+      document.getElementById('product-id').value = productId;
+      document.getElementById('product-name').value = product.name || '';
+      document.getElementById('product-desc').value = product.description || '';
+      document.getElementById('product-price').value = product.price || '';
+      document.getElementById('product-images-text').textContent =
+        product.image_paths?.length ? `✓ ${product.image_paths.length} existing image(s)` : 'Click to upload new images (replaces existing)';
+      document.getElementById('product-form-error').classList.add('hidden');
+      document.getElementById('product-modal').classList.remove('hidden');
+    };
+
+    window.deleteProductConfirm = async function(productId) {
+      if (!confirm('Delete this product? This cannot be undone.')) return;
+      try {
+        await deleteProduct(window.tasaraSellerProfile().user_id, productId);
+        window.initPage_products();
+      } catch (err) {
+        toast(err.message || 'Failed to delete product', 'error');
+      }
+    };
+
+    // Product form submit
+    document.getElementById('product-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const seller = window.tasaraSellerProfile();
+      if (!seller) return;
+
+      const name = document.getElementById('product-name').value.trim();
+      const description = document.getElementById('product-desc').value.trim();
+      const price = document.getElementById('product-price').value.trim();
+      const errEl = document.getElementById('product-form-error');
+      const btn = document.getElementById('product-submit-btn');
+
+      errEl.classList.add('hidden');
+      if (!name) {
+        errEl.textContent = 'Product name is required.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+
+      setLoading(btn, true);
+      try {
+        const productData = { name, description, price, images: pendingProductImages };
+        if (editingProductId) {
+          await updateProduct(seller.user_id, editingProductId, productData);
+        } else {
+          await addProduct(seller.user_id, productData);
+        }
+        closeProductModal();
+        window.initPage_products();
+      } catch (err) {
+        errEl.textContent = err.message || 'Failed to save product.';
+        errEl.classList.remove('hidden');
+      } finally {
+        setLoading(btn, false);
+      }
+    });
+
+    // Deactivate account
+    window.deactivateAccount = async function() {
+      if (!confirm('Are you sure you want to deactivate your account? This cannot be easily undone.')) return;
+      try {
+        const { user } = await import('./js/auth.js').then(m => m.getSessionUser());
+        const { error } = await getSupabase()
+          .from('profiles')
+          .update({ account_status: 'deactivated' })
+          .eq('id', user.id);
+        if (error) throw error;
+
+        // Notify admin
+        await getSupabase().from('notifications').insert([{
+          recipient_id: user.id,
+          type: 'account_deactivated',
+          title: 'Account Deactivated',
+          message: `${user.email || 'A user'} has deactivated their account.`,
+          read: false,
+        }]);
+
+        toast('Account deactivated.', 'warning');
+        const { signOut } = await import('./js/auth.js');
+        await signOut();
+        window.location.href = '/login.html';
+      } catch (err) {
+        toast(err.message || 'Failed to deactivate account.', 'error');
+      }
+    };
+
+    // ============================================================
+    // Helpers
+    // ============================================================
+    function setLoading(btn, loading) {
+      if (!btn) return;
+      if (loading) {
+        btn.dataset.originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner" style="border-top-color:#0b0f1a;"></span> Saving…';
+      } else {
+        btn.disabled = false;
+        btn.innerHTML = btn.dataset.originalText || btn.textContent;
+      }
+    }
+
+    function escHtml(str) {
+      if (str == null) return '';
+      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    function formatChangeLabel(key) {
+      const labels = {
+        full_name: 'Full Name', phone: 'Phone', address: 'Address',
+        business_name: 'Business Name', business_location: 'Location',
+        description: 'Description', opening_time: 'Opening Time', closing_time: 'Closing Time',
+      };
+      return labels[key] || key;
+    }
+  </script>
+</body>
+</html>

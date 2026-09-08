@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard — Tasara</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/design-system.css">
+  <link rel="stylesheet" href="css/pages.css">
+</head>
+<body>
+  <div class="mobile-header">
+    <div class="nav-logo">Tasara</div>
+    <button class="hamburger" onclick="toggleMobileMenu()">☰</button>
+  </div>
+
+  <div class="dashboard-layout" id="dashboard-layout" style="display:none;">
+    <aside class="sidebar">
+      <div class="sidebar-logo">Tasara</div>
+      <nav class="sidebar-nav" id="sidebar-nav"></nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-user" id="sidebar-user"></div>
+        <button class="sidebar-link" onclick="window.signOut()" style="margin-top:8px;color:var(--clr-danger);">
+          <span class="link-icon">🚪</span> Logout
+        </button>
+      </div>
+    </aside>
+
+    <div class="mobile-overlay" id="mobile-overlay" onclick="toggleMobileMenu(false)"></div>
+    <div class="mobile-nav" id="mobile-nav">
+      <div class="sidebar-logo">Tasara</div>
+      <nav class="sidebar-nav" id="mobile-nav-links"></nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-user" id="mobile-sidebar-user"></div>
+        <button class="sidebar-link" onclick="window.signOut()" style="margin-top:8px;color:var(--clr-danger);">
+          <span class="link-icon">🚪</span> Logout
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="nav" id="top-nav"></div>
+
+  <main class="dashboard-main">
+
+    <section id="page-dashboard" class="page-section">
+      <div class="dashboard-header"><div><h1>Dashboard</h1><p>Platform overview</p></div></div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-label">Total Users</div><div class="stat-value" id="stat-total-users">—</div></div>
+        <div class="stat-card"><div class="stat-label">Total Buyers</div><div class="stat-value" id="stat-total-buyers">—</div></div>
+        <div class="stat-card"><div class="stat-label">Total Sellers</div><div class="stat-value" id="stat-total-sellers">—</div></div>
+        <div class="stat-card"><div class="stat-label">Pending Sellers</div><div class="stat-value" id="stat-pending-sellers">—</div></div>
+        <div class="stat-card"><div class="stat-label">Pending Changes</div><div class="stat-value" id="stat-pending-changes">—</div></div>
+      </div>
+    </section>
+
+    <section id="page-users" class="page-section hidden">
+      <div class="dashboard-header"><div><h1>Users</h1><p>All registered users</p></div></div>
+      <div id="users-list"></div>
+    </section>
+
+    <section id="page-applications" class="page-section hidden">
+      <div class="dashboard-header"><div><h1>Seller Applications</h1><p>Review and approve seller registrations</p></div></div>
+      <div id="seller-applications-list"></div>
+    </section>
+
+    <section id="page-pending-changes" class="page-section hidden">
+      <div class="dashboard-header"><div><h1>Pending Changes</h1><p>Review seller profile and business changes</p></div></div>
+      <div id="pending-changes-list"></div>
+    </section>
+
+    <section id="page-products" class="page-section hidden">
+      <div class="dashboard-header"><div><h1>Products</h1><p>All seller products across the platform</p></div></div>
+      <div id="products-list"></div>
+    </section>
+
+    <section id="page-notifications" class="page-section hidden">
+      <div class="dashboard-header">
+        <div><h1>Notifications</h1><p>Platform alerts and updates</p></div>
+        <button class="btn btn-ghost btn-sm" onclick="markAllRead()">Mark all read</button>
+      </div>
+      <div class="notification-list" id="notifications-list"></div>
+    </section>
+
+    <section id="page-settings" class="page-section hidden">
+      <div class="dashboard-header"><div><h1>Settings</h1><p>Admin configuration</p></div></div>
+      <div class="card">
+        <h3>Platform Configuration</h3>
+        <div class="form-group" style="margin-top:20px;">
+          <label class="form-label">Telegram Community URL</label>
+          <input type="url" id="admin-telegram-url" class="form-input" value="https://t.me/tasara_community">
+          <div class="form-hint">This link appears in the "Join Community" button for all users.</div>
+        </div>
+        <button class="btn btn-primary" onclick="saveAdminSettings()">Save Settings</button>
+      </div>
+    </section>
+
+  </main>
+
+  <script type="module">
+    import { initDashboard } from './js/dashboard.js';
+    import { initAuthListeners } from './js/auth.js';
+    import { getSupabase } from './js/supabase.js';
+    import { toast, setLoading } from './js/ui.js';
+    import {
+      loadAdminStats, loadSellerApplications, loadUsers,
+      loadPendingChangeRequests, loadProducts, loadNotifications
+    } from './js/admin.js';
+
+    // Protect admin page
+    const session = await getSupabase().auth.getSession();
+    if (!session.data.session) {
+      window.location.href = '/login.html';
+    } else {
+      const { data: profile } = await getSupabase()
+        .from('profiles')
+        .select('role')
+        .eq('id', session.data.session.user.id)
+        .single();
+      if (profile?.role !== 'admin') {
+        window.location.href = '/dashboard.html';
+      }
+    }
+
+    initAuthListeners();
+    initDashboard();
+
+    // Admin sidebar
+    const adminLinks = [
+      { page: 'dashboard', icon: '📊', label: 'Dashboard' },
+      { page: 'users', icon: '👥', label: 'Users' },
+      { page: 'applications', icon: '📋', label: 'Seller Applications' },
+      { page: 'pending-changes', icon: '🔄', label: 'Pending Changes' },
+      { page: 'products', icon: '📦', label: 'Products' },
+      { page: 'notifications', icon: '🔔', label: 'Notifications' },
+      { page: 'settings', icon: '⚙️', label: 'Settings' },
+    ];
+
+    function renderSidebar() {
+      const html = adminLinks.map(l => `
+        <button class="sidebar-link ${l.page === 'dashboard' ? 'active' : ''}" data-page="${l.page}">
+          <span class="link-icon">${l.icon}</span> ${l.label}
+        </button>
+      `).join('');
+
+      const nav = document.getElementById('sidebar-nav');
+      const mobileNav = document.getElementById('mobile-nav-links');
+      if (nav) nav.innerHTML = html;
+      if (mobileNav) mobileNav.innerHTML = html;
+
+      document.querySelectorAll('.sidebar-link[data-page]').forEach(link => {
+        link.addEventListener('click', () => {
+          const page = link.dataset.page;
+          document.querySelectorAll('.page-section').forEach(el => el.classList.add('hidden'));
+          const target = document.getElementById(`page-${page}`);
+          if (target) target.classList.remove('hidden');
+          document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+          link.classList.add('active');
+
+          const loadMap = {
+            'dashboard': loadAdminStats,
+            'users': loadUsers,
+            'applications': loadSellerApplications,
+            'pending-changes': loadPendingChangeRequests,
+            'products': loadProducts,
+            'notifications': loadNotifications,
+          };
+          if (loadMap[page]) loadMap[page]();
+          toggleMobileMenu(false);
+        });
+      });
+    }
+
+    renderSidebar();
+    loadAdminStats();
+
+    // Expose for inline handlers
+    window.loadAdminStats = loadAdminStats;
+    window.loadSellerApplications = loadSellerApplications;
+    window.loadUsers = loadUsers;
+    window.loadPendingChangeRequests = loadPendingChangeRequests;
+    window.loadProducts = loadProducts;
+    window.loadNotifications = loadNotifications;
+
+    window.saveAdminSettings = function() {
+      const url = document.getElementById('admin-telegram-url').value.trim();
+      if (url) {
+        localStorage.setItem('tasara_telegram_url', url);
+        toast('Settings saved!', 'success');
+      }
+    };
+  </script>
+</body>
+</html>

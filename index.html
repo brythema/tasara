@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tasara — Your Gateway to Community</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/design-system.css">
+  <link rel="stylesheet" href="css/pages.css">
+</head>
+<body>
+  <div class="home-hero">
+    <div>
+      <h1>Welcome to<br><span>Tasara</span></h1>
+      <p>Your trusted gateway to a thriving Nigerian business community. Register as a buyer or seller, manage your account, and connect with our growing community on Telegram.</p>
+      <div class="home-actions">
+        <a href="login.html" class="btn btn-primary btn-lg">Log In</a>
+        <a href="signup.html" class="btn btn-outline btn-lg">Sign Up</a>
+      </div>
+      <div class="home-features">
+        <div class="feature-card">
+          <div class="feature-icon">🛒</div>
+          <h3>For Buyers</h3>
+          <p>Create an account, browse approved sellers, and connect with trusted vendors in our community.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🏪</div>
+          <h3>For Sellers</h3>
+          <p>Register your business, showcase your products, and reach a wider audience of verified buyers.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🤝</div>
+          <h3>Community First</h3>
+          <p>Join our Telegram community for discussions, updates, and real-time engagement with members.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Redirect if already logged in
+    fetch('js/config.js').then(r => r.text()).then(() => {
+      // Config loaded, now check session
+      import('./js/supabase.js').then(m => {
+        m.getSupabase().auth.getSession().then(({ data }) => {
+          if (data.session) {
+            m.getProfile(data.session.user.id).then(profile => {
+              if (profile?.role === 'admin') window.location.href = '/admin.html';
+              else window.location.href = '/dashboard.html';
+            });
+          }
+        });
+      });
+    });
+  </script>
+</body>
+</html>

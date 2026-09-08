@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign Up — Tasara</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/design-system.css">
+  <link rel="stylesheet" href="css/pages.css">
+</head>
+<body>
+  <div class="auth-page">
+    <div class="auth-card glass">
+      <div class="auth-logo">
+        <h1>Tasara</h1>
+        <p>Create your account</p>
+      </div>
+
+      <!-- Account Type Toggle -->
+      <div class="auth-toggle">
+        <button class="active" id="btn-buyer" onclick="switchAccountType('buyer')">Buyer</button>
+        <button id="btn-seller" onclick="switchAccountType('seller')">Seller</button>
+      </div>
+
+      <!-- Buyer Registration -->
+      <div id="buyer-form">
+        <form id="buyer-signup-form" novalidate>
+          <div class="form-group">
+            <label class="form-label" for="buyer-name">Full Name</label>
+            <input type="text" id="buyer-name" class="form-input" placeholder="e.g. Adebayo Johnson" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="buyer-email">Email</label>
+            <input type="email" id="buyer-email" class="form-input" placeholder="you@example.com" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="buyer-phone">Phone Number</label>
+            <input type="tel" id="buyer-phone" class="form-input" placeholder="e.g. 08012345678" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="buyer-address">House / Street Address</label>
+            <input type="text" id="buyer-address" class="form-input" placeholder="e.g. 15 Adeola Odeku, Victoria Island" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="buyer-password">Password</label>
+            <input type="password" id="buyer-password" class="form-input" placeholder="Min. 6 characters" required>
+            <div class="pw-strength"><div class="pw-strength-bar" id="buyer-pw-bar"></div></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="buyer-confirm">Confirm Password</label>
+            <input type="password" id="buyer-confirm" class="form-input" placeholder="Re-enter password" required>
+          </div>
+          <div id="buyer-signup-error" class="form-error hidden"></div>
+          <button type="submit" class="btn btn-primary btn-block btn-lg" id="buyer-signup-btn">
+            Create Buyer Account
+          </button>
+        </form>
+        <div class="auth-footer mt-md">
+          Already have an account? <a href="login.html">Log in</a>
+        </div>
+      </div>
+
+      <!-- Seller Registration -->
+      <div id="seller-form" class="hidden">
+        <form id="seller-signup-form" novalidate>
+          <div class="form-group">
+            <label class="form-label" for="seller-name">Full Name</label>
+            <input type="text" id="seller-name" class="form-input" placeholder="e.g. Chioma Okafor" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="seller-email">Email</label>
+            <input type="email" id="seller-email" class="form-input" placeholder="you@example.com" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="seller-phone">Phone Number</label>
+            <input type="tel" id="seller-phone" class="form-input" placeholder="e.g. 08012345678" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="seller-address">House / Street Address</label>
+            <input type="text" id="seller-address" class="form-input" placeholder="e.g. 22 Awolowo Road, Ikoyi" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="seller-password">Password</label>
+            <input type="password" id="seller-password" class="form-input" placeholder="Min. 6 characters" required>
+            <div class="pw-strength"><div class="pw-strength-bar" id="seller-pw-bar"></div></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="seller-confirm">Confirm Password</label>
+            <input type="password" id="seller-confirm" class="form-input" placeholder="Re-enter password" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Select Your Tier</label>
+            <div class="tier-grid" id="tier-selection">
+              <div class="tier-card" data-tier="bronze" onclick="selectTier('bronze')">
+                <div class="tier-icon">🟤</div>
+                <div class="tier-name">Bronze</div>
+                <div class="tier-desc">Starter tier</div>
+              </div>
+              <div class="tier-card" data-tier="silver" onclick="selectTier('silver')">
+                <div class="tier-icon">⚪</div>
+                <div class="tier-name">Silver</div>
+                <div class="tier-desc">Growing business</div>
+              </div>
+              <div class="tier-card" data-tier="gold" onclick="selectTier('gold')">
+                <div class="tier-icon">🟡</div>
+                <div class="tier-name">Gold</div>
+                <div class="tier-desc">Established seller</div>
+              </div>
+              <div class="tier-card" data-tier="platinum" onclick="selectTier('platinum')">
+                <div class="tier-icon">⚫</div>
+                <div class="tier-name">Platinum</div>
+                <div class="tier-desc">Premium tier</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Government ID</label>
+            <div class="file-upload" id="id-upload-area" onclick="document.getElementById('id-file').click()">
+              <input type="file" id="id-file" accept=".jpg,.jpeg,.png,.pdf" onchange="handleIdUpload(this)">
+              <div class="upload-icon">📄</div>
+              <div class="upload-text" id="id-upload-text">Click to upload your Government ID</div>
+              <div class="upload-hint">JPG, PNG, or PDF — Max 10 MB</div>
+            </div>
+          </div>
+
+          <div id="seller-signup-error" class="form-error hidden"></div>
+          <button type="submit" class="btn btn-primary btn-block btn-lg" id="seller-signup-btn">
+            Create Seller Account
+          </button>
+        </form>
+        <div class="auth-footer mt-md">
+          Already have an account? <a href="login.html">Log in</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let selectedTier = null;
+    let idFile = null;
+
+    function switchAccountType(type) {
+      const buyerBtn = document.getElementById('btn-buyer');
+      const sellerBtn = document.getElementById('btn-seller');
+      const buyerForm = document.getElementById('buyer-form');
+      const sellerForm = document.getElementById('seller-form');
+
+      if (type === 'buyer') {
+        buyerBtn.classList.add('active');
+        sellerBtn.classList.remove('active');
+        buyerForm.classList.remove('hidden');
+        sellerForm.classList.add('hidden');
+      } else {
+        sellerBtn.classList.add('active');
+        buyerBtn.classList.remove('active');
+        sellerForm.classList.remove('hidden');
+        buyerForm.classList.add('hidden');
+      }
+    }
+
+    window.selectTier = function(tier) {
+      selectedTier = tier;
+      document.querySelectorAll('.tier-card').forEach(card => {
+        card.classList.toggle('selected', card.dataset.tier === tier);
+      });
+    };
+
+    window.handleIdUpload = function(input) {
+      const file = input.files[0];
+      const text = document.getElementById('id-upload-text');
+      if (file) {
+        const maxSize = 10 * 1024 * 1024; // 10MB
+        const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+        if (!allowed.includes(file.type)) {
+          text.textContent = 'Invalid file type. Use JPG, PNG, or PDF.';
+          text.style.color = 'var(--clr-danger)';
+          input.value = '';
+          return;
+        }
+        if (file.size > maxSize) {
+          text.textContent = 'File too large. Maximum 10 MB.';
+          text.style.color = 'var(--clr-danger)';
+          input.value = '';
+          return;
+        }
+        idFile = file;
+        text.textContent = `✓ ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+        text.style.color = 'var(--clr-success)';
+      }
+    };
+
+    // Password strength indicator
+    function updatePwStrength(inputId, barId) {
+      const input = document.getElementById(inputId);
+      const bar = document.getElementById(barId);
+      if (!input || !bar) return;
+      input.addEventListener('input', () => {
+        const val = input.value;
+        let strength = 0;
+        if (val.length >= 6) strength++;
+        if (val.length >= 10) strength++;
+        if (/[A-Z]/.test(val)) strength++;
+        if (/[0-9]/.test(val)) strength++;
+        if (/[^A-Za-z0-9]/.test(val)) strength++;
+        const pct = Math.min(100, (strength / 5) * 100);
+        bar.style.width = pct + '%';
+        if (pct <= 40) bar.style.background = 'var(--clr-danger)';
+        else if (pct <= 70) bar.style.background = 'var(--clr-warning)';
+        else bar.style.background = 'var(--clr-success)';
+      });
+    }
+    updatePwStrength('buyer-password', 'buyer-pw-bar');
+    updatePwStrength('seller-password', 'seller-pw-bar');
+  </script>
+
+  <script type="module">
+    import { signUp, initAuthListeners } from './js/auth.js';
+    import { getSupabase, uploadFile } from './js/supabase.js';
+    import { toast } from './js/ui.js';
+
+    initAuthListeners();
+
+    // Redirect if already logged in
+    getSupabase().auth.getSession().then(({ data }) => {
+      if (data.session) {
+        getSupabase().from('profiles').select('role').eq('id', data.session.user.id).single()
+          .then(({ data: p }) => {
+            if (p?.role === 'admin') window.location.href = '/admin.html';
+            else window.location.href = '/dashboard.html';
+          });
+      }
+    });
+
+    // Buyer signup
+    document.getElementById('buyer-signup-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('buyer-name').value.trim();
+      const email = document.getElementById('buyer-email').value.trim();
+      const phone = document.getElementById('buyer-phone').value.trim();
+      const address = document.getElementById('buyer-address').value.trim();
+      const password = document.getElementById('buyer-password').value;
+      const confirm = document.getElementById('buyer-confirm').value;
+      const errEl = document.getElementById('buyer-signup-error');
+      const btn = document.getElementById('buyer-signup-btn');
+
+      errEl.classList.add('hidden');
+
+      if (!name || !email || !phone || !address || !password || !confirm) {
+        errEl.textContent = 'Please fill in all fields.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+      if (password !== confirm) {
+        errEl.textContent = 'Passwords do not match.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+      if (password.length < 6) {
+        errEl.textContent = 'Password must be at least 6 characters.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+
+      setLoading(btn, true);
+      try {
+        const { data, error } = await signUp(email, password, { full_name: name });
+        if (error) throw error;
+
+        // Create profile
+        const { error: profileError } = await getSupabase()
+          .from('profiles')
+          .insert([{
+            id: data.user.id,
+            full_name: name,
+            email,
+            phone,
+            address,
+            role: 'buyer',
+            account_status: 'active',
+          }]);
+        if (profileError) throw profileError;
+
+        toast('Account created! Check your email to verify.', 'success');
+        setTimeout(() => { window.location.href = '/login.html'; }, 1500);
+      } catch (err) {
+        errEl.textContent = err.message || 'Failed to create account.';
+        errEl.classList.remove('hidden');
+      } finally {
+        setLoading(btn, false);
+      }
+    });
+
+    // Seller signup
+    document.getElementById('seller-signup-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('seller-name').value.trim();
+      const email = document.getElementById('seller-email').value.trim();
+      const phone = document.getElementById('seller-phone').value.trim();
+      const address = document.getElementById('seller-address').value.trim();
+      const password = document.getElementById('seller-password').value;
+      const confirm = document.getElementById('seller-confirm').value;
+      const errEl = document.getElementById('seller-signup-error');
+      const btn = document.getElementById('seller-signup-btn');
+
+      errEl.classList.add('hidden');
+
+      if (!name || !email || !phone || !address || !password || !confirm) {
+        errEl.textContent = 'Please fill in all fields.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+      if (password !== confirm) {
+        errEl.textContent = 'Passwords do not match.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+      if (password.length < 6) {
+        errEl.textContent = 'Password must be at least 6 characters.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+      if (!selectedTier) {
+        errEl.textContent = 'Please select a seller tier.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+      if (!idFile) {
+        errEl.textContent = 'Please upload your Government ID.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+
+      setLoading(btn, true);
+      try {
+        const { data, error } = await signUp(email, password, { full_name: name });
+        if (error) throw error;
+
+        // Upload government ID
+        const timestamp = Date.now();
+        const ext = idFile.name.split('.').pop();
+        const idPath = `sellers/${data.user.id}/${timestamp}.${ext}`;
+        await uploadFile('government-ids', idPath, idFile);
+
+        // Create profile
+        const { error: profileError } = await getSupabase().from('profiles').insert([{
+          id: data.user.id,
+          full_name: name,
+          email,
+          phone,
+          address,
+          role: 'seller',
+          account_status: 'active',
+        }]);
+        if (profileError) throw profileError;
+
+        // Create seller profile
+        const { error: sellerError } = await getSupabase().from('seller_profiles').insert([{
+          user_id: data.user.id,
+          tier: selectedTier,
+          approval_status: 'pending',
+          government_id_path: idPath,
+        }]);
+        if (sellerError) throw sellerError;
+
+        toast('Seller account created! Check your email to verify.', 'success');
+        setTimeout(() => { window.location.href = '/login.html'; }, 1500);
+      } catch (err) {
+        errEl.textContent = err.message || 'Failed to create account.';
+        errEl.classList.remove('hidden');
+      } finally {
+        setLoading(btn, false);
+      }
+    });
+
+    function setLoading(btn, loading) {
+      if (!btn) return;
+      if (loading) {
+        btn.dataset.originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner" style="border-top-color: #0b0f1a;"></span> Creating account…';
+      } else {
+        btn.disabled = false;
+        btn.innerHTML = btn.dataset.originalText || btn.textContent;
+      }
+    }
+  </script>
+</body>
+</html>

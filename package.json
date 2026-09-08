@@ -1,0 +1,14 @@
+{
+  "name": "tasara",
+  "version": "1.0.0",
+  "description": "Tasara — Buyer/Seller Account & Admin Management Platform",
+  "private": true,
+  "scripts": {
+    "dev": "npx serve . -l 3000",
+    "build": "echo 'No build step required — static site'",
+    "start": "npx serve . -l 3000"
+  },
+  "devDependencies": {
+    "serve": "^14.2.0"
+  }
+}

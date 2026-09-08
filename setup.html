@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Setup — Tasara</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/design-system.css">
+  <link rel="stylesheet" href="css/pages.css">
+</head>
+<body>
+  <div class="auth-page">
+    <div class="auth-card glass" style="max-width:480px;">
+      <div class="auth-logo">
+        <h1>Tasara</h1>
+        <p>Admin Account Setup</p>
+      </div>
+      <div class="auth-header">
+        <h2>Create First Admin</h2>
+        <p>This page should only be accessed once during initial setup. It creates the first admin account.</p>
+      </div>
+      <form id="setup-form" novalidate>
+        <div class="form-group">
+          <label class="form-label" for="setup-name">Full Name</label>
+          <input type="text" id="setup-name" class="form-input" placeholder="e.g. Admin User" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="setup-email">Email</label>
+          <input type="email" id="setup-email" class="form-input" placeholder="admin@tasara.ng" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="setup-phone">Phone Number</label>
+          <input type="tel" id="setup-phone" class="form-input" placeholder="e.g. 08012345678">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="setup-address">Address</label>
+          <input type="text" id="setup-address" class="form-input" placeholder="e.g. Abuja, Nigeria">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="setup-password">Password</label>
+          <input type="password" id="setup-password" class="form-input" placeholder="Min. 6 characters" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="setup-confirm">Confirm Password</label>
+          <input type="password" id="setup-confirm" class="form-input" placeholder="Re-enter password" required>
+        </div>
+        <div id="setup-error" class="form-error hidden"></div>
+        <button type="submit" class="btn btn-primary btn-block btn-lg" id="setup-btn">
+          Create Admin Account
+        </button>
+      </form>
+      <div class="auth-footer mt-md">
+        <a href="login.html">← Back to Login</a>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { signUp } from './js/auth.js';
+    import { getSupabase } from './js/supabase.js';
+    import { toast, setLoading } from './js/ui.js';
+
+    // Check if admin already exists
+    const { data: existingAdmins } = await getSupabase()
+      .from('profiles')
+      .select('id')
+      .eq('role', 'admin')
+      .limit(1);
+
+    if (existingAdmins && existingAdmins.length > 0) {
+      document.body.innerHTML = `
+        <div class="auth-page">
+          <div class="auth-card glass" style="max-width:480px;text-align:center;">
+            <div class="auth-logo"><h1>Tasara</h1></div>
+            <div class="card" style="text-align:center;padding:40px;">
+              <div style="font-size:3rem;margin-bottom:16px;">✓</div>
+              <h2 style="margin-bottom:8px;">Admin Already Exists</h2>
+              <p style="color:var(--clr-text-mid);margin-bottom:24px;">An admin account has already been created. Use the admin login page instead.</p>
+              <a href="login.html" class="btn btn-primary">Go to Login</a>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    document.getElementById('setup-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('setup-name').value.trim();
+      const email = document.getElementById('setup-email').value.trim();
+      const phone = document.getElementById('setup-phone').value.trim();
+      const address = document.getElementById('setup-address').value.trim();
+      const password = document.getElementById('setup-password').value;
+      const confirm = document.getElementById('setup-confirm').value;
+      const errEl = document.getElementById('setup-error');
+      const btn = document.getElementById('setup-btn');
+
+      errEl.classList.add('hidden');
+
+      if (!name || !email || !password || !confirm) {
+        errEl.textContent = 'Please fill in all required fields.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+      if (password !== confirm) {
+        errEl.textContent = 'Passwords do not match.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+      if (password.length < 6) {
+        errEl.textContent = 'Password must be at least 6 characters.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+
+      setLoading(btn, true);
+      try {
+        const { data, error } = await signUp(email, password, { full_name: name });
+        if (error) throw error;
+
+        // Create admin profile
+        const { error: profileError } = await getSupabase().from('profiles').insert([{
+          id: data.user.id,
+          full_name: name,
+          email,
+          phone,
+          address,
+          role: 'admin',
+          account_status: 'active',
+        }]);
+        if (profileError) throw profileError;
+
+        toast('Admin account created successfully!', 'success');
+        setTimeout(() => {
+          window.location.href = '/login.html';
+        }, 1500);
+      } catch (err) {
+        errEl.textContent = err.message || 'Failed to create admin account.';
+        errEl.classList.remove('hidden');
+      } finally {
+        setLoading(btn, false);
+      }
+    });
+  </script>
+</body>
+</html>
