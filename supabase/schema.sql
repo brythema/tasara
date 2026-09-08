@@ -25,7 +25,7 @@ create table if not exists profiles (
 -- 2. SELLER PROFILES TABLE
 -- ----------------------------------------------------------
 create table if not exists seller_profiles (
-  user_id uuid references auth.users(id) on delete cascade primary key,
+  user_id uuid not null,
   tier text not null check (tier in ('bronze', 'silver', 'gold', 'platinum')),
   approval_status text not null default 'pending' check (approval_status in ('pending', 'approved', 'rejected', 'pending-review')),
   government_id_path text,
@@ -35,7 +35,10 @@ create table if not exists seller_profiles (
   opening_time time,
   closing_time time,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  primary key (user_id),
+  constraint seller_profiles_user_id_fkey foreign key (user_id) references auth.users(id) on delete cascade,
+  constraint seller_profiles_profile_fkey foreign key (user_id) references profiles(id) on delete cascade
 );
 
 -- ----------------------------------------------------------
@@ -43,13 +46,15 @@ create table if not exists seller_profiles (
 -- ----------------------------------------------------------
 create table if not exists products (
   id uuid default uuid_generate_v4() primary key,
-  seller_id uuid references auth.users(id) on delete cascade not null,
+  seller_id uuid not null,
   name text not null,
   description text,
   price text,
   image_paths text[] default '{}',
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  constraint products_seller_id_fkey foreign key (seller_id) references auth.users(id) on delete cascade,
+  constraint products_profile_fkey foreign key (seller_id) references profiles(id) on delete cascade
 );
 
 -- ----------------------------------------------------------
@@ -57,14 +62,16 @@ create table if not exists products (
 -- ----------------------------------------------------------
 create table if not exists seller_change_requests (
   id uuid default uuid_generate_v4() primary key,
-  seller_id uuid references auth.users(id) on delete cascade not null,
+  seller_id uuid not null,
   changes jsonb not null,
   old_values jsonb,
   new_values jsonb,
   status text not null default 'pending' check (status in ('pending', 'approved', 'rejected')),
   submitted_at timestamptz not null default now(),
   reviewed_at timestamptz,
-  reviewed_by uuid references auth.users(id)
+  reviewed_by uuid references auth.users(id),
+  constraint seller_change_requests_seller_id_fkey foreign key (seller_id) references auth.users(id) on delete cascade,
+  constraint seller_change_requests_profile_fkey foreign key (seller_id) references profiles(id) on delete cascade
 );
 
 -- ----------------------------------------------------------
