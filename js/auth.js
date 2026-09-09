@@ -54,7 +54,9 @@ export async function resetPassword(email) {
   if (error) throw error;
 }
 
-// Get current user and their profile — safely handles null user
+// Get current user and their profile — safely handles null user.
+// Identity is validated server-side via auth.getUser(), not just read
+// from the cached session.
 export async function getSessionUser() {
   const session = await getSession();
   if (!session) return null;
@@ -64,22 +66,33 @@ export async function getSessionUser() {
   return { user, profile };
 }
 
-// Check if current user is admin
+// Role checks never throw — they are used as page gates, and a
+// transient network error must not take the whole page down.
 export async function isAdmin() {
-  const { profile } = await getSessionUser() || {};
-  return profile?.role === 'admin';
+  try {
+    const { profile } = await getSessionUser() || {};
+    return profile?.role === 'admin';
+  } catch {
+    return false;
+  }
 }
 
-// Check if current user is seller
 export async function isSeller() {
-  const { profile } = await getSessionUser() || {};
-  return profile?.role === 'seller';
+  try {
+    const { profile } = await getSessionUser() || {};
+    return profile?.role === 'seller';
+  } catch {
+    return false;
+  }
 }
 
-// Check if current user is buyer
 export async function isBuyer() {
-  const { profile } = await getSessionUser() || {};
-  return profile?.role === 'buyer';
+  try {
+    const { profile } = await getSessionUser() || {};
+    return profile?.role === 'buyer';
+  } catch {
+    return false;
+  }
 }
 
 // Redirect based on role after login

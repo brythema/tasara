@@ -1,9 +1,12 @@
 // ============================================================
-// TASARA — App Configuration
+// TASARA — App Configuration (ES module)
 // ============================================================
 
-const CONFIG = {
-  // Supabase — filled from user input
+export const CONFIG = {
+  // Supabase project credentials.
+  // These are PUBLIC client credentials by design (RLS protects the data),
+  // but migrate to a `sb_publishable_...` key before Supabase's legacy
+  // anon-key deprecation (end of 2026): Dashboard → Settings → API Keys.
   SUPABASE_URL: 'https://ukyqjsmpqfdhfwhhujzo.supabase.co',
   SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVreXFqc21wcWZkaGZ3aGh1anpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4ODAyMzEsImV4cCI6MjEwNDQ1NjIzMX0.OHMdwwVXIIunNUqmRHwQHOV6uI8GqxIRGQsCnYx4KHI',
 
@@ -22,7 +25,7 @@ const CONFIG = {
   ID_ACCEPTED_TYPES: ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'],
   ID_MAX_SIZE_MB: 10,
 
-  // Product image accepted types
-  PRODUCT_IMAGE_TYPES: ['image/jpeg', 'image/jpg', 'image/png'],
+  // Product image accepted formats
+  PRODUCT_IMAGE_TYPES: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
   PRODUCT_IMAGE_MAX_SIZE_MB: 5,
 };

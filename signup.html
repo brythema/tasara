@@ -223,15 +223,24 @@
     import { toast, setLoading } from './js/ui.js';
 
     // Redirect if already logged in
-    getSupabase().auth.getSession().then(({ data }) => {
-      if (data.session) {
-        getSupabase().from('profiles').select('role').eq('id', data.session.user.id).single()
-          .then(({ data: p }) => {
-            if (p?.role === 'admin') window.location.href = '/admin.html';
-            else window.location.href = '/dashboard.html';
-          });
+    try {
+      const session = await getSupabase().auth.getSession();
+      if (session.data.session) {
+        const { data: p, error: profileErr } = await getSupabase().from('profiles').select('role').eq('id', session.data.session.user.id).single();
+        if (!profileErr && p?.role === 'admin') window.location.href = '/admin.html';
+        else if (!profileErr) window.location.href = '/dashboard.html';
       }
-    });
+    } catch { /* stay on signup */ }
+
+    // Storage path: sellers/{user_id}/{timestamp}-{random}.{sanitized-ext}
+    // Random suffix prevents collisions; the sanitized extension keeps
+    // hostile characters out of the path.
+    function buildIdPath(userId, file) {
+      const rawExt = file.name.split('.').pop() || '';
+      const ext = rawExt.replace(/[^a-z0-9]/gi, '').toLowerCase().slice(0, 8) || 'bin';
+      const rand = Math.random().toString(36).slice(2, 8);
+      return `sellers/${userId}/${Date.now()}-${rand}.${ext}`;
+    }
 
     // Buyer signup
     document.getElementById('buyer-signup-form').addEventListener('submit', async (e) => {
@@ -268,7 +277,8 @@
         const { data, error } = await signUp(email, password, { full_name: name });
         if (error) throw error;
 
-        // Create profile
+        // Fill in profile details. Role and account status are set by the
+        // database trigger — the client never sends them.
         const { error: profileError } = await getSupabase()
           .from('profiles')
           .upsert({
@@ -277,8 +287,6 @@
             email,
             phone,
             address,
-            role: 'buyer',
-            account_status: 'active',
           }, { onConflict: 'id' });
         if (profileError) throw profileError;
 
@@ -337,13 +345,12 @@
         const { data, error } = await signUp(email, password, { full_name: name, role: 'seller' });
         if (error) throw error;
 
-        // Upload government ID
-        const timestamp = Date.now();
-        const ext = idFile.name.split('.').pop();
-        const idPath = `sellers/${data.user.id}/${timestamp}.${ext}`;
+        // Upload government ID (path is user-scoped; policy enforces
+        // type and size server-side too)
+        const idPath = buildIdPath(data.user.id, idFile);
         await uploadFile('government-ids', idPath, idFile);
 
-        // Create profile
+        // Fill in profile details (role comes from the signup trigger)
         const { error: profileError } = await getSupabase()
           .from('profiles')
           .upsert({
@@ -352,12 +359,10 @@
             email,
             phone,
             address,
-            role: 'seller',
-            account_status: 'active',
           }, { onConflict: 'id' });
         if (profileError) throw profileError;
 
-        // Create seller profile
+        // Create seller profile (RLS: sellers may insert their own row)
         const { error: sellerError } = await getSupabase().from('seller_profiles').insert([{
           user_id: data.user.id,
           tier: selectedTier,

@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
   <title>Admin Setup — Tasara</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -18,58 +19,109 @@
         <p>Admin Account Setup</p>
       </div>
       <div class="auth-header">
-        <h2>Create First Admin</h2>
-        <p>This page should only be accessed once during initial setup. It creates the first admin account.</p>
+        <h2 id="setup-heading">Create First Admin</h2>
+        <p id="setup-intro">This page creates the very first admin account. It permanently locks itself once an admin exists.</p>
       </div>
-      <form id="setup-form" novalidate>
-        <div class="form-group">
-          <label class="form-label" for="setup-name">Full Name</label>
-          <input type="text" id="setup-name" class="form-input" placeholder="e.g. Admin User" required>
+
+      <!-- Step 1: create the auth account -->
+      <div id="setup-create">
+        <form id="setup-form" novalidate>
+          <div class="form-group">
+            <label class="form-label" for="setup-name">Full Name</label>
+            <input type="text" id="setup-name" class="form-input" placeholder="e.g. Admin User" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="setup-email">Email</label>
+            <input type="email" id="setup-email" class="form-input" placeholder="admin@tasara.ng" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="setup-phone">Phone Number</label>
+            <input type="tel" id="setup-phone" class="form-input" placeholder="e.g. 08012345678">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="setup-address">Address</label>
+            <input type="text" id="setup-address" class="form-input" placeholder="e.g. Abuja, Nigeria">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="setup-password">Password</label>
+            <input type="password" id="setup-password" class="form-input" placeholder="Min. 6 characters" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="setup-confirm">Confirm Password</label>
+            <input type="password" id="setup-confirm" class="form-input" placeholder="Re-enter password" required>
+          </div>
+          <div id="setup-error" class="form-error hidden"></div>
+          <button type="submit" class="btn btn-primary btn-block btn-lg" id="setup-btn">
+            Create Admin Account
+          </button>
+        </form>
+        <div class="auth-footer mt-md">
+          <a href="login.html">← Back to Login</a>
         </div>
-        <div class="form-group">
-          <label class="form-label" for="setup-email">Email</label>
-          <input type="email" id="setup-email" class="form-input" placeholder="admin@tasara.ng" required>
+      </div>
+
+      <!-- Step 2: claim the admin role (shown when already signed in) -->
+      <div id="setup-claim" class="hidden">
+        <p id="claim-text" style="color:var(--clr-text-mid);"></p>
+        <div id="claim-error" class="form-error hidden"></div>
+        <button type="button" class="btn btn-primary btn-block btn-lg" id="claim-btn">Claim Admin Role</button>
+        <div class="auth-footer mt-md">
+          <a href="login.html">← Back to Login</a>
         </div>
-        <div class="form-group">
-          <label class="form-label" for="setup-phone">Phone Number</label>
-          <input type="tel" id="setup-phone" class="form-input" placeholder="e.g. 08012345678">
+      </div>
+
+      <!-- Pending email confirmation -->
+      <div id="setup-pending" class="hidden">
+        <p style="color:var(--clr-text-mid);">Account created. Check your email inbox and confirm your address, then
+          <strong>log in and return to this page</strong> to finish claiming the admin role.</p>
+        <div class="auth-footer mt-md">
+          <a href="login.html" class="btn btn-primary">Go to Login</a>
         </div>
-        <div class="form-group">
-          <label class="form-label" for="setup-address">Address</label>
-          <input type="text" id="setup-address" class="form-input" placeholder="e.g. Abuja, Nigeria">
-        </div>
-        <div class="form-group">
-          <label class="form-label" for="setup-password">Password</label>
-          <input type="password" id="setup-password" class="form-input" placeholder="Min. 6 characters" required>
-        </div>
-        <div class="form-group">
-          <label class="form-label" for="setup-confirm">Confirm Password</label>
-          <input type="password" id="setup-confirm" class="form-input" placeholder="Re-enter password" required>
-        </div>
-        <div id="setup-error" class="form-error hidden"></div>
-        <button type="submit" class="btn btn-primary btn-block btn-lg" id="setup-btn">
-          Create Admin Account
-        </button>
-      </form>
-      <div class="auth-footer mt-md">
-        <a href="login.html">← Back to Login</a>
       </div>
     </div>
   </div>
 
   <script type="module">
-    import { signUp } from './js/auth.js';
     import { getSupabase } from './js/supabase.js';
+    import { signUp } from './js/auth.js';
     import { toast, setLoading } from './js/ui.js';
 
-    // Check if admin already exists
-    const { data: existingAdmins } = await getSupabase()
-      .from('profiles')
-      .select('id')
-      .eq('role', 'admin')
-      .limit(1);
+    const sectionCreate = document.getElementById('setup-create');
+    const sectionClaim = document.getElementById('setup-claim');
+    const sectionPending = document.getElementById('setup-pending');
 
-    if (existingAdmins && existingAdmins.length > 0) {
+    function show(section) {
+      for (const s of [sectionCreate, sectionClaim, sectionPending]) {
+        s.classList.toggle('hidden', s !== section);
+      }
+    }
+
+    // Clear errors on input focus
+    document.querySelectorAll('.form-input').forEach(input => {
+      input.addEventListener('focus', () => {
+        const err = document.getElementById('setup-error');
+        if (err) err.classList.add('hidden');
+      });
+    });
+
+    // ---------------- Guard: does an admin already exist? ----------------
+    let adminExists = true;
+    let session = null;
+    try {
+      const { data: existsData, error: existsError } = await getSupabase()
+        .rpc('first_admin_exists');
+      if (existsError) throw existsError;
+      adminExists = !!existsData;
+    } catch (e) {
+      console.error('Admin existence check failed:', e);
+      document.getElementById('setup-intro').textContent =
+        'Unable to verify setup state. Make sure schema.sql has been run in Supabase.';
+      show(sectionPending);
+      sectionPending.innerHTML = '<p style="color:var(--clr-danger);">Setup is unavailable right now. Ask your developer to check the database schema.</p>';
+      throw e;
+    }
+
+    if (adminExists) {
       document.body.innerHTML = `
         <div class="auth-page">
           <div class="auth-card glass" style="max-width:480px;text-align:center;">
@@ -83,20 +135,24 @@
           </div>
         </div>
       `;
+    } else {
+      // No admin yet — decide which step to show.
+      const { data: sessionData } = await getSupabase().auth.getSession();
+      session = sessionData.session;
+
+      if (session) {
+        // Already authenticated (email confirmation disabled, or returning
+        // after confirming) — go straight to the claim step.
+        document.getElementById('claim-text').textContent =
+          `You are signed in as ${session.user.email}. Claim the first admin role to finish setup.`;
+        show(sectionClaim);
+      } else {
+        show(sectionCreate);
+      }
     }
 
-    // Clear errors on input focus
-    document.querySelectorAll('.form-input').forEach(input => {
-      input.addEventListener('focus', () => {
-        const form = input.closest('form');
-        if (form) {
-          const err = form.querySelector('.form-error');
-          if (err) err.classList.add('hidden');
-        }
-      });
-    });
-
-    document.getElementById('setup-form').addEventListener('submit', async (e) => {
+    // ---------------- Step 1: create the account ----------------
+    document.getElementById('setup-form')?.addEventListener('submit', async (e) => {
       e.preventDefault();
       const name = document.getElementById('setup-name').value.trim();
       const email = document.getElementById('setup-email').value.trim();
@@ -132,27 +188,55 @@
 
       setLoading(btn, true);
       try {
-        const { data, error } = await signUp(email, password, { full_name: name, role: 'admin' });
+        // The signup trigger creates a plain buyer profile — the admin
+        // role is only granted by claim_first_admin() below, and only
+        // while no admin exists.
+        const { data, error } = await signUp(email, password, { full_name: name });
         if (error) throw error;
 
-        // Create admin profile
+        // Fill in profile details (role/status come from the trigger)
         const { error: profileError } = await getSupabase().from('profiles').upsert({
           id: data.user.id,
           full_name: name,
           email,
           phone,
           address,
-          role: 'admin',
-          account_status: 'active',
         }, { onConflict: 'id' });
         if (profileError) throw profileError;
 
-        toast('Admin account created successfully!', 'success');
-        setTimeout(() => {
-          window.location.href = '/login.html';
-        }, 1500);
+        if (data.session) {
+          // Email confirmation disabled — claim immediately.
+          await claimAdmin();
+        } else {
+          // Email confirmation enabled — user must confirm + log in first,
+          // because the claim RPC requires an authenticated session.
+          show(sectionPending);
+        }
       } catch (err) {
         errEl.textContent = err.message || 'Failed to create admin account.';
+        errEl.classList.remove('hidden');
+      } finally {
+        setLoading(btn, false);
+      }
+    });
+
+    // ---------------- Step 2: claim the admin role ----------------
+    async function claimAdmin() {
+      const { error } = await getSupabase().rpc('claim_first_admin');
+      if (error) throw error;
+    }
+
+    document.getElementById('claim-btn')?.addEventListener('click', async (e) => {
+      const btn = e.currentTarget;
+      const errEl = document.getElementById('claim-error');
+      errEl.classList.add('hidden');
+      setLoading(btn, true);
+      try {
+        await claimAdmin();
+        toast('Admin account created successfully!', 'success');
+        setTimeout(() => { window.location.href = '/admin.html'; }, 1200);
+      } catch (err) {
+        errEl.textContent = err.message || 'Failed to claim admin role.';
         errEl.classList.remove('hidden');
       } finally {
         setLoading(btn, false);

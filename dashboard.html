@@ -57,7 +57,7 @@
           <h1 id="dashboard-greeting">Welcome back</h1>
           <p id="dashboard-subtitle">Here's your overview</p>
         </div>
-        <button class="btn btn-primary" type="button" onclick="window.location.href='${CONFIG.TELEGRAM_COMMUNITY_URL}'">
+        <button class="btn btn-primary" type="button" onclick="joinCommunity()">
           📱 Join Community
         </button>
       </div>
@@ -82,7 +82,7 @@
           <div style="display:flex;gap:12px;flex-wrap:wrap;">
             <button class="btn btn-outline" type="button" onclick="navigateTo('profile')">👤 My Profile</button>
             <button class="btn btn-outline" type="button" onclick="navigateTo('settings')">⚙️ Settings</button>
-            <button class="btn btn-primary" type="button" onclick="window.location.href='${CONFIG.TELEGRAM_COMMUNITY_URL}'">📱 Join Telegram</button>
+            <button class="btn btn-primary" type="button" onclick="joinCommunity()">📱 Join Telegram</button>
           </div>
         </div>
       </div>
@@ -99,7 +99,7 @@
               You'll be notified once your application is reviewed.
             </p>
             <div id="seller-tier-display" style="margin-bottom:16px;"></div>
-            <button class="btn btn-primary" type="button" onclick="window.location.href='${CONFIG.TELEGRAM_COMMUNITY_URL}'">
+            <button class="btn btn-primary" type="button" onclick="joinCommunity()">
               📱 Join Community While Waiting
             </button>
           </div>
@@ -147,7 +147,7 @@
               <button class="btn btn-outline" type="button" onclick="navigateTo('profile')">👤 My Profile</button>
               <button class="btn btn-outline" type="button" onclick="navigateTo('business')">🏪 My Business</button>
               <button class="btn btn-outline" type="button" onclick="navigateTo('products')">📦 My Products</button>
-              <button class="btn btn-primary" type="button" onclick="window.location.href='${CONFIG.TELEGRAM_COMMUNITY_URL}'">📱 Join Telegram</button>
+              <button class="btn btn-primary" type="button" onclick="joinCommunity()">📱 Join Telegram</button>
             </div>
           </div>
         </div>
@@ -408,12 +408,29 @@
   <script type="module">
     import { initDashboard } from './js/dashboard.js';
     import { initAuthListeners } from './js/auth.js';
-    import { getSupabase } from './js/supabase.js';
+    import { getSupabase, getProducts } from './js/supabase.js';
     import { updateBuyerProfile, submitSellerChangeRequest } from './js/profile.js';
     import { addProduct, updateProduct, deleteProduct } from './js/products.js';
     import { toast, setLoading } from './js/ui.js';
     import { getSessionUser } from './js/auth.js';
-    import { getPendingChangeRequests, getNotifications } from './js/supabase.js';
+    import { getPendingChangeRequests, getNotifications, markNotificationRead } from './js/supabase.js';
+    import { CONFIG } from './js/config.js';
+
+    // Static HTML cannot interpolate ${CONFIG...} — expose the link
+    // through a global instead.
+    window.joinCommunity = function() {
+      window.location.href = CONFIG.TELEGRAM_COMMUNITY_URL;
+    };
+
+    // Mark a notification read and re-render the list
+    window.readNotification = async function(id) {
+      try {
+        await markNotificationRead(id);
+        window.initPage_notifications();
+      } catch (err) {
+        toast(err.message || 'Failed to mark notification read', 'error');
+      }
+    };
 
     initAuthListeners();
     initDashboard();
@@ -855,14 +872,18 @@
           .eq('id', user.id);
         if (error) throw error;
 
-        // Notify admin
-        await getSupabase().from('notifications').insert([{
-          recipient_id: user.id,
-          type: 'account_deactivated',
-          title: 'Account Deactivated',
-          message: `${user.email || 'A user'} has deactivated their account.`,
-          read: false,
-        }]);
+        // Notify admins via the security definer RPC (there is no client
+        // INSERT policy on notifications).
+        try {
+          const { notifyAdmins } = await import('./js/supabase.js');
+          await notifyAdmins(
+            'account_deactivated',
+            'Account Deactivated',
+            `${user.email || 'A user'} has deactivated their account.`
+          );
+        } catch (e) {
+          console.warn('Deactivation notification failed (non-critical):', e);
+        }
 
         toast('Account deactivated.', 'warning');
         const { signOut } = await import('./js/auth.js');
@@ -887,7 +908,8 @@
 
     function escHtml(str) {
       if (str == null) return '';
-      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
     }
   </script>
 </body>

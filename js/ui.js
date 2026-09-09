@@ -2,6 +2,8 @@
 // TASARA — UI Helpers (Toast, Loading, etc.)
 // ============================================================
 
+import { CONFIG } from './config.js';
+
 // Toast notification system
 function toast(message, type = 'info', title = null) {
   const container = document.getElementById('toast-container') || createToastContainer();
@@ -32,11 +34,17 @@ function createToastContainer() {
   return container;
 }
 
+// Escapes text for safe interpolation into HTML content AND into
+// double/single-quoted attributes (missing &quot;/&#39; was the XSS
+// vector in the previous version — never skip the quote escapes).
 function escHtml(str) {
   if (str == null) return '';
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 // Loading state helper
@@ -96,7 +104,7 @@ function statusBadge(status) {
 // Role badge HTML
 function roleBadge(role) {
   const map = { buyer: 'badge-info', seller: 'badge-gold', admin: 'badge-danger' };
-  return `<span class="badge ${map[role] || 'badge-info'}">${role.toUpperCase()}</span>`;
+  return `<span class="badge ${map[role] || 'badge-info'}">${String(role || '').toUpperCase()}</span>`;
 }
 
 // Mobile menu toggle — single source of truth

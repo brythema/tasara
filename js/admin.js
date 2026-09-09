@@ -2,23 +2,27 @@
 // TASARA — Admin Module
 // ============================================================
 
-import { getSupabase, getAllSellerProfiles, getAllBuyerProfiles, getAllPendingChangeRequests, getProducts, getNotifications, markNotificationRead, markAllNotificationsRead } from './supabase.js';
+import { getSupabase, getAllSellerProfiles, getAllBuyerProfiles, getAllPendingChangeRequests, getNotifications, markNotificationRead, markAllNotificationsRead, notifyUser } from './supabase.js';
 import { getSessionUser } from './auth.js';
 import { toast, formatDate, formatDateTime, getInitials, tierBadge, statusBadge } from './ui.js';
 import { applySellerChanges, rejectSellerChange } from './profile.js';
 
 // Admin dashboard stats
 export async function loadAdminStats() {
-  const { data: buyers } = await getSupabase().from('profiles').select('id').eq('role', 'buyer');
-  const { data: sellers } = await getSupabase().from('profiles').select('id').eq('role', 'seller');
-  const { data: pendingSellers } = await getSupabase()
+  const { data: buyers, error: buyersError } = await getSupabase().from('profiles').select('id').eq('role', 'buyer');
+  if (buyersError) throw buyersError;
+  const { data: sellers, error: sellersError } = await getSupabase().from('profiles').select('id').eq('role', 'seller');
+  if (sellersError) throw sellersError;
+  const { data: pendingSellers, error: pendingError } = await getSupabase()
     .from('seller_profiles')
-    .select('id')
+    .select('user_id')
     .in('approval_status', ['pending', 'pending-review']);
-  const { data: pendingChanges } = await getSupabase()
+  if (pendingError) throw pendingError;
+  const { data: pendingChanges, error: changesError } = await getSupabase()
     .from('seller_change_requests')
     .select('id')
     .eq('status', 'pending');
+  if (changesError) throw changesError;
 
   const stats = {
     totalUsers: (buyers?.length || 0) + (sellers?.length || 0),
@@ -85,12 +89,14 @@ function renderSellerCard(seller, showActions, isRejected) {
   const tierHtml = seller.tier ? tierBadge(seller.tier) : '';
   const statusHtml = statusBadge(seller.approval_status);
 
+  // Values travel via data-* attributes, never via string-built onclick
+  // arguments — this is what closes the stored-XSS hole.
   let actions = '';
   if (showActions && seller.approval_status === 'pending') {
     actions = `
       <div style="display:flex;gap:8px;margin-top:16px;">
-        <button class="btn btn-primary btn-sm" onclick="approveSeller('${seller.user_id}')">✓ Approve</button>
-        <button class="btn btn-danger btn-sm" onclick="rejectSeller('${seller.user_id}', '${escHtml(p?.full_name || '')}')">✕ Reject</button>
+        <button class="btn btn-primary btn-sm" type="button" data-action="approve-seller" data-user-id="${escHtml(seller.user_id)}" data-email="${escHtml(p?.email || '')}">✓ Approve</button>
+        <button class="btn btn-danger btn-sm" type="button" data-action="reject-seller" data-user-id="${escHtml(seller.user_id)}" data-name="${escHtml(p?.full_name || 'this seller')}">✕ Reject</button>
       </div>
     `;
   }
@@ -116,7 +122,7 @@ function renderSellerCard(seller, showActions, isRejected) {
       ${seller.government_id_path ? `
         <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--clr-border);">
           <span style="font-size:0.813rem;color:var(--clr-text-mid);">Government ID: </span>
-          <a href="#" onclick="viewGovernmentId('${seller.government_id_path}');return false;" style="font-size:0.813rem;">View ID</a>
+          <a href="#" data-action="view-government-id" data-path="${escHtml(seller.government_id_path)}" style="font-size:0.813rem;">View ID</a>
         </div>
       ` : ''}
     </div>
@@ -134,7 +140,7 @@ async function viewGovernmentId(path) {
 }
 
 // Approve a seller
-window.approveSeller = async function (userId) {
+async function approveSeller(userId, sellerEmail) {
   try {
     const { error } = await getSupabase()
       .from('seller_profiles')
@@ -143,14 +149,32 @@ window.approveSeller = async function (userId) {
 
     if (error) throw error;
 
-    // Create notification for the seller
-    await getSupabase().from('notifications').insert([{
-      recipient_id: userId,
-      type: 'seller_approved',
-      title: 'Seller Application Approved',
-      message: 'Your seller application has been approved. You can now use all seller features.',
-      read: false,
-    }]);
+    // Notify the seller via the security definer RPC (clients have no
+    // INSERT policy on notifications).
+    await notifyUser(
+      userId,
+      'seller_approved',
+      'Seller Application Approved',
+      'Your seller application has been approved. You can now use all seller features.'
+    );
+
+    // Email the seller (non-critical; the edge function verifies the
+    // caller is an admin before honoring an arbitrary recipient).
+    if (sellerEmail) {
+      try {
+        const { error: emailError } = await getSupabase().functions.invoke('send-email', {
+          body: {
+            to: sellerEmail,
+            subject: 'Seller Application Approved — Tasara',
+            template: 'seller_approved',
+            data: {},
+          },
+        });
+        if (emailError) throw emailError;
+      } catch (e) {
+        console.warn('Seller approval email failed (non-critical):', e);
+      }
+    }
 
     toast('Seller approved successfully!', 'success');
     loadSellerApplications();
@@ -158,10 +182,10 @@ window.approveSeller = async function (userId) {
   } catch (e) {
     toast(e.message || 'Failed to approve seller', 'error');
   }
-};
+}
 
 // Reject a seller
-window.rejectSeller = async function (userId, sellerName) {
+async function rejectSeller(userId, sellerName) {
   if (!confirm(`Reject ${sellerName}'s seller application?`)) return;
   try {
     const { error } = await getSupabase()
@@ -171,14 +195,12 @@ window.rejectSeller = async function (userId, sellerName) {
 
     if (error) throw error;
 
-    // Notify seller
-    await getSupabase().from('notifications').insert([{
-      recipient_id: userId,
-      type: 'seller_rejected',
-      title: 'Seller Application Rejected',
-      message: 'Unfortunately, your seller application was not approved. Please contact support for more information.',
-      read: false,
-    }]);
+    await notifyUser(
+      userId,
+      'seller_rejected',
+      'Seller Application Rejected',
+      'Unfortunately, your seller application was not approved. Please contact support for more information.'
+    );
 
     toast('Seller application rejected', 'warning');
     loadSellerApplications();
@@ -186,7 +208,7 @@ window.rejectSeller = async function (userId, sellerName) {
   } catch (e) {
     toast(e.message || 'Failed to reject seller', 'error');
   }
-};
+}
 
 // Load pending change requests
 export async function loadPendingChangeRequests() {
@@ -216,12 +238,12 @@ export async function loadPendingChangeRequests() {
       changesHtml += `
         <div class="change-item">
           <div>
-            <div style="font-size:0.75rem;color:var(--clr-text-dim);text-transform:uppercase;">${label}</div>
+            <div style="font-size:0.75rem;color:var(--clr-text-dim);text-transform:uppercase;">${escHtml(label)}</div>
             <div class="change-old">${escHtml(String(oldValue))}</div>
           </div>
           <div class="change-arrow">→</div>
           <div>
-            <div style="font-size:0.75rem;color:var(--clr-text-dim);text-transform:uppercase;">${label}</div>
+            <div style="font-size:0.75rem;color:var(--clr-text-dim);text-transform:uppercase;">${escHtml(label)}</div>
             <div class="change-new">${escHtml(String(newValue))}</div>
           </div>
         </div>
@@ -233,11 +255,11 @@ export async function loadPendingChangeRequests() {
         <div class="change-request-header">
           <div>
             <div style="font-weight:700;">${escHtml(sellerName)}</div>
-            <div style="font-size:0.813rem;color:var(--clr-text-mid);">${tier} Seller · Submitted ${formatDateTime(req.submitted_at)}</div>
+            <div style="font-size:0.813rem;color:var(--clr-text-mid);">${escHtml(tier)} Seller · Submitted ${formatDateTime(req.submitted_at)}</div>
           </div>
           <div style="display:flex;gap:8px;">
-            <button class="btn btn-primary btn-sm" onclick="adminApproveChange('${req.id}', '${req.seller_id}')">✓ Approve</button>
-            <button class="btn btn-danger btn-sm" onclick="adminRejectChange('${req.id}')">✕ Reject</button>
+            <button class="btn btn-primary btn-sm" type="button" data-action="approve-change" data-request-id="${escHtml(req.id)}">✓ Approve</button>
+            <button class="btn btn-danger btn-sm" type="button" data-action="reject-change" data-request-id="${escHtml(req.id)}">✕ Reject</button>
           </div>
         </div>
         ${changesHtml}
@@ -260,9 +282,9 @@ function formatChangeLabel(key) {
   return labels[key] || key;
 }
 
-window.adminApproveChange = async function (requestId, sellerId) {
+window.adminApproveChange = async function (requestId) {
   try {
-    await applySellerChanges(requestId, sellerId);
+    await applySellerChanges(requestId);
     toast('Changes approved!', 'success');
     loadPendingChangeRequests();
     loadAdminStats();
@@ -302,7 +324,7 @@ export async function loadUsers() {
           <div style="font-size:0.813rem;color:var(--clr-text-mid);">${escHtml(u.email)}</div>
         </div>
         ${statusBadge(u.account_status)}
-        <button class="btn btn-danger btn-sm" onclick="deactivateAccount('${u.id}', '${escHtml(u.full_name)}')">Deactivate</button>
+        <button class="btn btn-danger btn-sm" type="button" data-action="deactivate-user" data-user-id="${escHtml(u.id)}">Deactivate</button>
       </div>
     `;
   }
@@ -318,7 +340,7 @@ export async function loadUsers() {
         </div>
         ${s.tier ? tierBadge(s.tier) : ''}
         ${statusBadge(s.approval_status)}
-        <button class="btn btn-danger btn-sm" onclick="deactivateAccount('${s.user_id}', '${escHtml(s.profiles?.full_name || '?')}')">Deactivate</button>
+        <button class="btn btn-danger btn-sm" type="button" data-action="deactivate-user" data-user-id="${escHtml(s.user_id)}">Deactivate</button>
       </div>
     `;
   }
@@ -353,7 +375,7 @@ export async function loadNotifications() {
       account_deactivated: '⚠',
     };
     container.innerHTML += `
-      <div class="notification-item ${n.read ? '' : 'unread'}" onclick="readNotification('${n.id}')">
+      <div class="notification-item ${n.read ? '' : 'unread'}" data-action="read-notification" data-notification-id="${escHtml(n.id)}">
         <div class="notification-icon">${icons[n.type] || '🔔'}</div>
         <div class="notification-body">
           <div class="notification-title">${escHtml(n.title)}</div>
@@ -365,47 +387,55 @@ export async function loadNotifications() {
   }
 }
 
-// Load products (admin view)
+// Load products (admin view) — one query with the seller joined,
+// no N+1 per seller.
 export async function loadProducts() {
   const container = document.getElementById('products-list');
   if (!container) return;
 
-  const { data: sellers } = await getSupabase()
-    .from('seller_profiles')
-    .select('user_id, profiles:user_id(full_name)');
+  const { data: products, error } = await getSupabase()
+    .from('products')
+    .select('*, seller:profiles!products_profile_fkey(full_name)')
+    .order('created_at', { ascending: false });
+  if (error) {
+    toast(error.message || 'Failed to load products', 'error');
+    return;
+  }
 
   let html = '';
-  for (const seller of (sellers || [])) {
-    const products = await getProducts(seller.user_id);
-    if (products.length === 0) continue;
+  let lastSeller = null;
 
-    html += `<h3 style="margin:24px 0 12px;">${escHtml(seller.profiles?.full_name || 'Unknown')}</h3>`;
-    for (const prod of products) {
-      const imgHtml = prod.image_paths?.[0]
-        ? `<img src="${escHtml(prod.image_paths[0])}" style="width:100%;height:100%;object-fit:cover;">`
-        : '<span style="color:var(--clr-text-dim);">📷</span>';
-
-      html += `
-        <div class="card" style="margin-bottom:12px;display:flex;gap:16px;align-items:center;">
-          <div style="width:80px;height:60px;background:var(--clr-surface-2);border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">
-            ${imgHtml}
-          </div>
-          <div style="flex:1;">
-            <div style="font-weight:700;">${escHtml(prod.name)}</div>
-            <div style="font-size:0.813rem;color:var(--clr-text-mid);">${escHtml(prod.description || '')}</div>
-            <div style="font-size:0.938rem;color:var(--clr-primary);font-weight:700;margin-top:4px;">${escHtml(prod.price || '')}</div>
-          </div>
-          <div style="font-size:0.75rem;color:var(--clr-text-dim);">${formatDate(prod.created_at)}</div>
-        </div>
-      `;
+  for (const prod of (products || [])) {
+    const sellerName = prod.seller?.full_name || 'Unknown';
+    if (sellerName !== lastSeller) {
+      html += `<h3 style="margin:24px 0 12px;">${escHtml(sellerName)}</h3>`;
+      lastSeller = sellerName;
     }
+
+    const imgHtml = prod.image_paths?.[0]
+      ? `<img src="${escHtml(prod.image_paths[0])}" alt="${escHtml(prod.name)}" style="width:100%;height:100%;object-fit:cover;">`
+      : '<span style="color:var(--clr-text-dim);">📷</span>';
+
+    html += `
+      <div class="card" style="margin-bottom:12px;display:flex;gap:16px;align-items:center;">
+        <div style="width:80px;height:60px;background:var(--clr-surface-2);border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">
+          ${imgHtml}
+        </div>
+        <div style="flex:1;">
+          <div style="font-weight:700;">${escHtml(prod.name)}</div>
+          <div style="font-size:0.813rem;color:var(--clr-text-mid);">${escHtml(prod.description || '')}</div>
+          <div style="font-size:0.938rem;color:var(--clr-primary);font-weight:700;margin-top:4px;">${escHtml(prod.price || '')}</div>
+        </div>
+        <div style="font-size:0.75rem;color:var(--clr-text-dim);">${formatDate(prod.created_at)}</div>
+      </div>
+    `;
   }
 
   container.innerHTML = html || '<p style="color:var(--clr-text-mid);text-align:center;padding:40px 0;">No products yet.</p>';
 }
 
-// Deactivate account (admin action) — userId first, then userName for confirm message
-window.deactivateAccount = async function (userId, userName) {
+// Deactivate account (admin action)
+async function deactivateUser(userId, userName) {
   if (!confirm(`Deactivate ${userName}'s account? They will no longer be able to log in.`)) return;
   try {
     const { error } = await getSupabase()
@@ -419,14 +449,57 @@ window.deactivateAccount = async function (userId, userName) {
   } catch (e) {
     toast(e.message || 'Failed to deactivate', 'error');
   }
-};
+}
 
 function escHtml(str) {
   if (str == null) return '';
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
+
+// ============================================================
+// Event delegation — ONE listener resolves every data-action button
+// on the admin page. Rendered HTML carries only data-* attributes,
+// so no user-controlled value is ever concatenated into JS.
+// ============================================================
+document.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-action]');
+  if (!el) return;
+  const action = el.dataset.action;
+
+  switch (action) {
+    case 'approve-seller':
+      approveSeller(el.dataset.userId, el.dataset.email || '');
+      break;
+    case 'reject-seller':
+      rejectSeller(el.dataset.userId, el.dataset.name || 'this seller');
+      break;
+    case 'view-government-id':
+      e.preventDefault();
+      viewGovernmentId(el.dataset.path);
+      break;
+    case 'approve-change':
+      window.adminApproveChange(el.dataset.requestId);
+      break;
+    case 'reject-change':
+      window.adminRejectChange(el.dataset.requestId);
+      break;
+    case 'deactivate-user': {
+      const name = el.closest('.card')?.querySelector('[style*="font-weight:600"]')?.textContent || 'this user';
+      deactivateUser(el.dataset.userId, name);
+      break;
+    }
+    case 'read-notification':
+      markNotificationRead(el.dataset.notificationId)
+        .then(() => loadNotifications())
+        .catch(err => toast(err.message || 'Failed to mark read', 'error'));
+      break;
+  }
+});
 
 // Export for page scripts
 window.adminLoadStats = loadAdminStats;

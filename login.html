@@ -39,7 +39,19 @@
           </button>
         </form>
         <div class="auth-footer mt-md">
+          <button type="button" id="forgot-toggle" style="background:none;border:none;color:var(--clr-primary);cursor:pointer;font-size:0.875rem;padding:0;">
+            Forgot password?
+          </button>
+          &nbsp;·&nbsp;
           Don't have an account? <a href="signup.html">Sign up</a>
+        </div>
+        <div id="forgot-panel" class="hidden" style="margin-top:16px;">
+          <div class="form-group">
+            <label class="form-label" for="forgot-email">Account email</label>
+            <input type="email" id="forgot-email" class="form-input" placeholder="you@example.com">
+          </div>
+          <div id="forgot-error" class="form-error hidden"></div>
+          <button type="button" class="btn btn-outline btn-block" id="forgot-send-btn">Send reset link</button>
         </div>
         <div class="admin-link">
           <button type="button" id="show-admin-login">Admin Login</button>
@@ -76,7 +88,7 @@
   </div>
 
   <script type="module">
-    import { signIn, redirectToDashboard } from './js/auth.js';
+    import { signIn, redirectToDashboard, resetPassword } from './js/auth.js';
     import { getSupabase, getProfile } from './js/supabase.js';
     import { toast, setLoading } from './js/ui.js';
 
@@ -86,6 +98,38 @@
         getProfile(data.session.user.id).then(profile => {
           if (profile) redirectToDashboard(profile);
         });
+      }
+    });
+
+    // Forgot password panel
+    document.getElementById('forgot-toggle').addEventListener('click', () => {
+      document.getElementById('forgot-panel').classList.toggle('hidden');
+      const emailInput = document.getElementById('user-email');
+      if (emailInput.value) document.getElementById('forgot-email').value = emailInput.value;
+    });
+
+    document.getElementById('forgot-send-btn').addEventListener('click', async (e) => {
+      const btn = e.currentTarget;
+      const email = document.getElementById('forgot-email').value.trim();
+      const errEl = document.getElementById('forgot-error');
+      errEl.classList.add('hidden');
+      if (!email || !email.includes('@')) {
+        errEl.textContent = 'Please enter a valid email address.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+      setLoading(btn, true);
+      try {
+        await resetPassword(email);
+        // Deliberately vague on success — do not reveal whether the
+        // account exists.
+        toast('If that email is registered, a reset link has been sent.', 'success');
+        document.getElementById('forgot-panel').classList.add('hidden');
+      } catch (err) {
+        errEl.textContent = err.message || 'Failed to send reset email.';
+        errEl.classList.remove('hidden');
+      } finally {
+        setLoading(btn, false);
       }
     });
 

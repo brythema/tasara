@@ -1,0 +1,20 @@
+# Vercel build/cache artifacts (if you ever add a build step)
+.vercel/
+.next/
+node_modules/
+
+# Sensitive local files
+.env
+.env.local
+.env.*.local
+js/config.js
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

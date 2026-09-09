@@ -1,42 +1,23 @@
-# Tasara — Engineering Memory
+# Memory Index
 
-## Architecture Decisions
+This directory stores audit logs and notes for the Tasara project.
 
-### Frontend: Vanilla HTML/CSS/JS
-- No framework chosen to keep the project lightweight and fast to deploy
-- Modules loaded via ES imports from jsdelivr/esm.sh CDN
-- All state management is local to page scripts + Supabase client
+| File | Date | Description |
+|------|------|-------------|
+| AUDIT-2026-09-08.md | 2026-09-08 | Initial deep audit (12 issues found; claimed zero critical — inaccurate) |
+| AUDIT-2026-09-09.md | 2026-09-09 | Production hardening audit — all P0/P1 issues fixed, RLS hardened, XSS eliminated |
+| INDEX.md | — | This file |
 
-### Seller Edit Workflow (Critical Design)
-- **Never overwrite approved data before approval**
-- Seller edits create a row in `seller_change_requests` with old/new values
-- Seller status changes to `pending-review` but account remains active
-- Admin reviews the diff (old → new) and approves/rejects
-- On approve: new values are applied to `seller_profiles`, status back to `approved`
-- On reject: original data preserved, status back to `approved`
+## Project Status (2026-09-09)
 
-### Government ID Storage
-- Private Supabase Storage bucket: `government-ids`
-- Signed URLs only (1-hour expiry) for viewing
-- Admin and seller (their own) can access
-- Never exposed via public URLs
+The project has been hardened for production. All critical and high-severity issues
+from the stress-test audit have been remediated. The following items remain as
+**manual deployment checklist items** (see README.md):
 
-### Email Notifications
-- Supabase Edge Function (`send-email`) calls Resend API
-- Templates: buyer_profile_updated, seller_change_pending, new_seller_registration, account_deactivated
-- Admin email is configurable via `ADMIN_EMAIL` env var
-
-## Known Issues / TODO
-
-- [ ] Replace `admin@tasara.ng` with real admin email in profile.js and schema.sql
-- [ ] Replace Telegram placeholder with real community link
-- [ ] Set up Resend verified domain for production emails
-- [ ] Add email verification handling page (currently redirects to dashboard)
-- [ ] Consider adding Supabase database triggers for automated notifications instead of manual inserts
-
-## Brand
-
-- **Name:** Tasara
-- **Primary color:** Gold (#c8a44e)
-- **Background:** Dark navy (#0b0f1a)
-- **Style:** Premium, glassmorphic, minimal
+- [ ] Run `schema.sql` in Supabase SQL Editor
+- [ ] Create storage buckets: `government-ids` (private), `product-images` (public)
+- [ ] Deploy `send-email` edge function with `RESEND_API_KEY` and `ADMIN_EMAIL`
+- [ ] Update `js/config.js` with real credentials
+- [ ] Deploy to Vercel
+- [ ] Create first admin via `/setup.html`
+- [ ] Migrate to `sb_publishable_` key before end of 2026

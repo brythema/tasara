@@ -2,9 +2,10 @@
 // TASARA — Dashboard Module (Buyer & Seller)
 // ============================================================
 
-import { getSupabase, getSession, getProfile, getSellerProfile, getProducts, getPendingChangeRequests, getNotifications } from './supabase.js';
-import { getSession as getAuthSession, signOut as authSignOut } from './auth.js';
+import { getSupabase, getProfile, getSellerProfile, getProducts, getPendingChangeRequests, getNotifications } from './supabase.js';
+import { getSessionUser, signOut as authSignOut } from './auth.js';
 import { toast, setLoading, formatDate, formatDateTime, getInitials, tierBadge, statusBadge } from './ui.js';
+import { CONFIG } from './config.js';
 
 let currentUser = null;
 let userProfile = null;
@@ -13,14 +14,16 @@ let sellerProfile = null;
 // Initialize dashboard — called on each dashboard page load
 export async function initDashboard() {
   try {
-    const session = await getAuthSession();
-    if (!session) {
+    // getSessionUser() validates the JWT via auth.getUser() — do not
+    // gate pages on the unvalidated cached session.
+    const sessionUser = await getSessionUser();
+    if (!sessionUser) {
       window.location.href = '/login.html';
       return;
     }
 
-    currentUser = session.user;
-    userProfile = await getProfile(currentUser.id);
+    currentUser = sessionUser.user;
+    userProfile = sessionUser.profile;
 
     if (!userProfile) {
       console.error('Profile not found for user:', currentUser.id);
@@ -65,7 +68,7 @@ export async function initDashboard() {
 }
 
 async function signOutRedirect() {
-  await authSignOut();
+  try { await authSignOut(); } catch { /* session may already be gone */ }
   window.location.href = '/login.html';
 }
 
@@ -79,7 +82,7 @@ function renderSidebar() {
     <div class="avatar avatar-sm">${initials}</div>
     <div class="sidebar-user-info">
       <div class="sidebar-user-name">${escHtml(userProfile.full_name)}</div>
-      <div class="sidebar-user-role">${userProfile.role.toUpperCase()}</div>
+      <div class="sidebar-user-role">${escHtml(userProfile.role.toUpperCase())}</div>
     </div>
   `;
 
@@ -173,7 +176,7 @@ function renderMobileSidebar() {
     <div class="avatar avatar-sm">${initials}</div>
     <div class="sidebar-user-info">
       <div class="sidebar-user-name">${escHtml(userProfile.full_name)}</div>
-      <div class="sidebar-user-role">${userProfile.role.toUpperCase()}</div>
+      <div class="sidebar-user-role">${escHtml(userProfile.role.toUpperCase())}</div>
     </div>
   `;
 
@@ -199,7 +202,7 @@ function renderTopNav() {
     <div class="nav-inner container">
       <div class="nav-logo">Tasara</div>
       <div class="nav-actions">
-        <button class="btn btn-outline btn-sm" onclick="window.location.href='${CONFIG.TELEGRAM_COMMUNITY_URL}'" title="Join Community">
+        <button class="btn btn-outline btn-sm" onclick="window.location.href='${escHtml(CONFIG.TELEGRAM_COMMUNITY_URL)}'" title="Join Community">
           📱 Join Community
         </button>
         <div class="nav-user" onclick="toggleUserMenu()">
@@ -212,6 +215,11 @@ function renderTopNav() {
 }
 
 function routeDashboardPage(page) {
+  // Only ever route to known page ids — never interpolate the hash
+  // into selectors or function names unvalidated.
+  const allowedPages = ['dashboard', 'profile', 'business', 'products', 'pending-changes', 'notifications', 'settings', 'users', 'applications'];
+  if (!allowedPages.includes(page)) page = 'dashboard';
+
   // Hide all page sections
   document.querySelectorAll('.page-section').forEach(el => el.classList.add('hidden'));
 
@@ -221,7 +229,7 @@ function routeDashboardPage(page) {
     target.classList.remove('hidden');
     // Trigger page-specific init
     const initFn = window[`initPage_${page}`];
-    if (initFn) initFn();
+    if (typeof initFn === 'function') initFn();
   }
 
   // Update active state in sidebar
@@ -232,9 +240,12 @@ function routeDashboardPage(page) {
 
 function escHtml(str) {
   if (str == null) return '';
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 // Global sign out
