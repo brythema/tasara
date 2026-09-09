@@ -7,7 +7,7 @@ node_modules/
 .env
 .env.local
 .env.*.local
-js/config.js
+# js/config.js  — must be deployed; credentials also set as Vercel env vars
 
 # IDE
 .idea/
