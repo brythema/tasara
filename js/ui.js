@@ -5,7 +5,7 @@
 import { CONFIG } from './config.js';
 
 // Toast notification system
-function toast(message, type = 'info', title = null) {
+export function toast(message, type = 'info', title = null) {
   const container = document.getElementById('toast-container') || createToastContainer();
   const icons = { success: '✓', error: '✕', info: 'ℹ', warning: '⚠' };
   const toastEl = document.createElement('div');
@@ -37,7 +37,7 @@ function createToastContainer() {
 // Escapes text for safe interpolation into HTML content AND into
 // double/single-quoted attributes (missing &quot;/&#39; was the XSS
 // vector in the previous version — never skip the quote escapes).
-function escHtml(str) {
+export function escHtml(str) {
   if (str == null) return '';
   return String(str)
     .replace(/&/g, '&amp;')
@@ -48,7 +48,7 @@ function escHtml(str) {
 }
 
 // Loading state helper
-function setLoading(btn, loading) {
+export function setLoading(btn, loading) {
   if (!btn) return;
   if (loading) {
     btn.dataset.originalText = btn.innerHTML;
@@ -61,13 +61,13 @@ function setLoading(btn, loading) {
 }
 
 // Format date for display
-function formatDate(dateStr) {
+export function formatDate(dateStr) {
   if (!dateStr) return '—';
   const d = new Date(dateStr);
   return d.toLocaleDateString('en-NG', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
-function formatDateTime(dateStr) {
+export function formatDateTime(dateStr) {
   if (!dateStr) return '—';
   const d = new Date(dateStr);
   return d.toLocaleDateString('en-NG', { year: 'numeric', month: 'short', day: 'numeric' }) +
@@ -75,20 +75,20 @@ function formatDateTime(dateStr) {
 }
 
 // Get initials from name
-function getInitials(name) {
+export function getInitials(name) {
   if (!name) return '?';
   return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
 }
 
 // Tier badge HTML
-function tierBadge(tierId) {
+export function tierBadge(tierId) {
   const tier = CONFIG.TIERS.find(t => t.id === tierId);
   if (!tier) return '';
   return `<span class="badge badge-${tier.id}">${tier.icon} ${tier.name}</span>`;
 }
 
 // Status badge HTML
-function statusBadge(status) {
+export function statusBadge(status) {
   const map = {
     active:         { cls: 'badge-success', label: 'Active' },
     pending:        { cls: 'badge-warning', label: 'Pending' },
@@ -102,13 +102,13 @@ function statusBadge(status) {
 }
 
 // Role badge HTML
-function roleBadge(role) {
+export function roleBadge(role) {
   const map = { buyer: 'badge-info', seller: 'badge-gold', admin: 'badge-danger' };
   return `<span class="badge ${map[role] || 'badge-info'}">${String(role || '').toUpperCase()}</span>`;
 }
 
 // Mobile menu toggle — single source of truth
-function toggleMobileMenu(open) {
+export function toggleMobileMenu(open) {
   const overlay = document.getElementById('mobile-overlay');
   const nav = document.getElementById('mobile-nav');
   if (open === undefined) {
