@@ -293,7 +293,17 @@
         toast('Account created! Check your email to verify.', 'success');
         setTimeout(() => { window.location.href = '/login.html'; }, 1500);
       } catch (err) {
-        errEl.textContent = err.message || 'Failed to create account.';
+        const msg = err.message || 'Failed to create account.';
+        // User-friendly message for Supabase email rate limit on free tier
+        if (msg.includes('rate limit') || msg.includes('over_email_send')) {
+          errEl.textContent = 'Too many signups attempted. Please wait a moment and try again.';
+        } else if (msg.includes('Email address') && msg.includes('invalid')) {
+          errEl.textContent = 'Please use a valid email address (e.g. from Gmail, Outlook, or your company domain).';
+        } else if (msg.includes('already exists')) {
+          errEl.textContent = 'An account with this email already exists. Try logging in instead.';
+        } else {
+          errEl.textContent = msg;
+        }
         errEl.classList.remove('hidden');
       } finally {
         setLoading(btn, false);
