@@ -50,7 +50,13 @@ function renderStatus(app) {
   }
 }
 
-document.addEventListener('DOMContentLoaded', async () => {
+// Module scripts evaluate after the document is parsed, but a dependency's
+// top-level await can let DOMContentLoaded fire first — so never rely on it.
+const onReady = fn => (document.readyState === 'loading'
+  ? document.addEventListener('DOMContentLoaded', fn)
+  : fn());
+
+onReady(async () => {
   try {
     const services = getFirebaseServices();
     observeAuth(services, async user => {
