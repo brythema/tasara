@@ -1,0 +1,44 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn() && request.auth.token.admin == true;
+    }
+
+    // Government-ID files are private. A seller can manage only their own file
+    // while the application is pending/rejected; administrators can always read them.
+    match /seller-government-id/{uid}/{fileName} {
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
+
+      allow write: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.size <= 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/(jpeg|png|webp)|application/pdf')
+        && firestore.exists(/databases/(default)/documents/users/$(uid))
+        && firestore.get(/databases/(default)/documents/users/$(uid)).data.role == 'seller'
+        && (
+          !firestore.exists(/databases/(default)/documents/sellers/$(uid))
+          || firestore.get(/databases/(default)/documents/sellers/$(uid)).data.status != 'approved'
+        );
+
+      allow delete: if isAdmin()
+        || (
+          signedIn()
+          && request.auth.uid == uid
+          && firestore.exists(/databases/(default)/documents/users/$(uid))
+          && firestore.get(/databases/(default)/documents/users/$(uid)).data.role == 'seller'
+          && firestore.exists(/databases/(default)/documents/sellers/$(uid))
+          && firestore.get(/databases/(default)/documents/sellers/$(uid)).data.status != 'approved'
+        );
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

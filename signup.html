@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Create an account — TASARA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body data-page="signup">
+
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <a class="brand" href="index.html">
+      <img src="assets/img/logo.png" alt="TASARA">
+      <span class="brand-word">TASARA</span>
+    </a>
+    <a class="topbar-link" href="index.html">← Back to tasara.africa</a>
+  </div>
+</header>
+
+<section class="auth-hero">
+  <div class="photo-frame" aria-hidden="true">
+    <div class="frame-bg" style="background-image:url('assets/photos/hero-3.webp')"></div>
+    <img class="frame-fg" src="assets/photos/hero-3.webp" alt="">
+  </div>
+  <div class="auth-hero-copy wrap">
+    <div class="eyebrow">Join TASARA</div>
+    <h1>Create your account.</h1>
+  </div>
+</section>
+
+<main class="auth-shell wrap page-content">
+
+  <div class="loop-pane">
+    <div class="loop">
+      <svg viewBox="0 0 200 200" aria-hidden="true">
+        <circle cx="100" cy="100" r="86" fill="none" stroke="rgba(10,35,66,0.14)" stroke-width="1.5" stroke-dasharray="2 7"/>
+        <g>
+          <circle cx="100" cy="100" r="86" fill="none" stroke="#B8962E" stroke-width="2.5"
+                  stroke-linecap="round" stroke-dasharray="46 494">
+            <animateTransform attributeName="transform" type="rotate" from="0 100 100" to="360 100 100" dur="7s" repeatCount="indefinite"/>
+          </circle>
+          <circle cx="100" cy="14" r="4.5" fill="#0A2342">
+            <animateTransform attributeName="transform" type="rotate" from="0 100 100" to="360 100 100" dur="7s" repeatCount="indefinite"/>
+          </circle>
+        </g>
+        <circle cx="100" cy="100" r="34" fill="none" stroke="#0A2342" stroke-width="1"/>
+        <text x="100" y="105" text-anchor="middle" font-family="Fraunces, serif" font-size="12" fill="#0A2342">JOIN</text>
+      </svg>
+    </div>
+    <p class="loop-caption" id="loopCaption">TASARA gives your work an identity within a trusted network — <b>seen, tracked, and valued over time.</b></p>
+  </div>
+
+  <div class="auth-col">
+    <div class="eyebrow">Create an account</div>
+    <h1 class="auth-title" id="stageTitle">Join TASARA</h1>
+    <p class="auth-sub" id="stageSub">Create a buyer account for immediate access, or apply as a Merchant Steward for Administrator approval.</p>
+
+    <div class="role-toggle" role="tablist" aria-label="Account type">
+      <button type="button" class="active" id="tabBuyer" role="tab" aria-selected="true">System Participant <span style="opacity:.7; font-weight:500;">(Buyer)</span></button>
+      <button type="button" id="tabSeller" role="tab" aria-selected="false">Merchant Steward <span style="opacity:.7; font-weight:500;">(Seller)</span></button>
+    </div>
+
+    <!-- ============ BUYER PANEL ============ -->
+    <div class="card" id="buyerPanel" style="margin-top:20px;">
+      <div class="card-kicker">System Participant <span style="opacity:.65;">(Buyer)</span></div>
+      <h2 style="font-size:1.25rem;">Create your account</h2>
+      <p class="helper" style="margin-bottom:18px;">Free to join. No stake or verification required.</p>
+
+      <div class="error-banner" id="buyerError">Please fill in every field before creating your account.</div>
+      <div class="error-banner" id="firebaseNote">Firebase is not connected yet. Add the Firebase web configuration before creating an account.</div>
+
+      <form id="buyerForm">
+        <div class="field">
+          <label for="bName">Full name <span class="req">*</span></label>
+          <input type="text" id="bName" required placeholder="e.g. Amara Okafor">
+        </div>
+        <div class="field">
+          <label for="bEmail">Email address <span class="req">*</span></label>
+          <input type="email" id="bEmail" required placeholder="you@example.com">
+        </div>
+        <div class="field">
+          <label for="bPhone">Phone number <span class="req">*</span></label>
+          <input type="tel" id="bPhone" required placeholder="+234 800 000 0000">
+        </div>
+        <div class="field">
+          <label for="bAddress">House address <span class="req">*</span></label>
+          <input type="text" id="bAddress" required placeholder="Street, city, state">
+        </div>
+        <div class="field-row two">
+          <div class="field">
+            <label for="bPassword">Password <span class="req">*</span></label>
+            <input type="password" id="bPassword" required minlength="8" placeholder="At least 8 characters" autocomplete="new-password">
+          </div>
+          <div class="field">
+            <label for="bPasswordConfirm">Confirm password <span class="req">*</span></label>
+            <input type="password" id="bPasswordConfirm" required minlength="8" placeholder="Re-enter password" autocomplete="new-password">
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary">Create account</button>
+      </form>
+      <p class="form-foot">Already have an account? <a href="login.html">Sign in</a></p>
+    </div>
+
+    <!-- ============ SELLER PANEL ============ -->
+    <div class="card" id="sellerPanel" style="margin-top:20px; display:none;">
+      <div class="card-kicker">Merchant Steward <span style="opacity:.65;">(Seller)</span></div>
+      <h2 style="font-size:1.25rem; margin-bottom:18px;">Become a Merchant Steward</h2>
+
+      <div class="stepper"><div class="dot done" data-step="1"></div><div class="dot" data-step="2"></div><div class="dot" data-step="3"></div></div>
+      <div class="step-label" id="stepLabel">Step <b>1 of 3</b> — Your details</div>
+
+      <div class="error-banner" id="sellerError">Please complete this step before continuing.</div>
+
+      <form id="sellerForm">
+
+        <!-- Step 1: contact + business info -->
+        <div class="step-panel active" data-panel="1">
+          <div class="field">
+            <label for="sName">Full name <span class="req">*</span></label>
+            <input type="text" id="sName" required placeholder="e.g. Ifeoma Nwachukwu">
+          </div>
+          <div class="field">
+            <label for="sAddress">House address <span class="req">*</span></label>
+            <input type="text" id="sAddress" required placeholder="Street, city, state">
+          </div>
+          <div class="field-row two">
+            <div class="field">
+              <label for="sPhone">Phone number <span class="req">*</span></label>
+              <input type="tel" id="sPhone" required placeholder="+234 800 000 0000">
+            </div>
+            <div class="field">
+              <label for="sEmail">Email address <span class="req">*</span></label>
+              <input type="email" id="sEmail" required placeholder="you@example.com">
+            </div>
+          </div>
+          <div class="field">
+            <label for="sBizName">Business name <span class="req">*</span></label>
+            <input type="text" id="sBizName" required placeholder="e.g. Nwachukwu Foods">
+          </div>
+          <div class="field">
+            <label for="sBizLocation">Business location <span class="req">*</span></label>
+            <input type="text" id="sBizLocation" required placeholder="Market, city, state">
+          </div>
+          <div class="field-row two">
+            <div class="field">
+              <label for="sPassword">Password <span class="req">*</span></label>
+              <input type="password" id="sPassword" required minlength="8" placeholder="At least 8 characters" autocomplete="new-password">
+            </div>
+            <div class="field">
+              <label for="sPasswordConfirm">Confirm password <span class="req">*</span></label>
+              <input type="password" id="sPasswordConfirm" required minlength="8" placeholder="Re-enter password" autocomplete="new-password">
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: tier selection -->
+        <div class="step-panel" data-panel="2">
+          <p class="helper" style="margin-bottom:14px;">Choose the Stewardship tier that fits your trade. Each tier sets your Liquidity Stake and the Omni issued to you on approval.</p>
+
+          <div class="tier-list" id="tierList">
+            <label class="tier">
+              <input type="radio" name="tier" value="1" required>
+              <div class="tier-body">
+                <div class="tier-num">Tier 1</div>
+                <div class="tier-name">Micro-Steward</div>
+                <div class="tier-simple">Starter</div>
+                <div class="tier-stats"><span><b>$50</b> stake</span><span><b>5</b> Omni</span></div>
+                <div class="tier-scope">Student ventures &amp; individual contractors</div>
+              </div>
+            </label>
+            <label class="tier">
+              <input type="radio" name="tier" value="2">
+              <div class="tier-body">
+                <div class="tier-num">Tier 2</div>
+                <div class="tier-name">Essential Steward</div>
+                <div class="tier-simple">Standard</div>
+                <div class="tier-stats"><span><b>$200</b> stake</span><span><b>20</b> Omni</span></div>
+                <div class="tier-scope">Daily goods, food &amp; primary commodities</div>
+              </div>
+            </label>
+            <label class="tier">
+              <input type="radio" name="tier" value="3">
+              <div class="tier-body">
+                <div class="tier-num">Tier 3</div>
+                <div class="tier-name">Strategic Steward</div>
+                <div class="tier-simple">Professional</div>
+                <div class="tier-stats"><span><b>$500</b> stake</span><span><b>50</b> Omni</span></div>
+                <div class="tier-scope">Consultancy, technology &amp; specialist services</div>
+              </div>
+            </label>
+            <label class="tier">
+              <input type="radio" name="tier" value="4">
+              <div class="tier-body">
+                <div class="tier-num">Tier 4</div>
+                <div class="tier-name">Foundational Steward</div>
+                <div class="tier-simple">Institutional</div>
+                <div class="tier-stats"><span><b>$1,000+</b> stake</span><span><b>100+</b> Omni</span></div>
+                <div class="tier-scope">Infrastructure, bulk supply &amp; institutional partners</div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Step 3: verification upload -->
+        <div class="step-panel" data-panel="3">
+          <p class="helper" style="margin-bottom:14px;">Upload one government-issued ID (National ID, passport, or driver's licence) so an Administrator can verify you.</p>
+          <label class="upload-box" id="uploadBox">
+            <input type="file" id="idUpload" accept=".jpg,.jpeg,.png,.pdf" required>
+            <div class="upload-icon">⬆</div>
+            <div class="upload-text" id="uploadText">Tap to upload — JPG, PNG or PDF, max 10MB</div>
+            <div class="upload-filename" id="uploadFilename"></div>
+          </label>
+        </div>
+
+        <div style="display:flex; gap:10px; margin-top:22px;">
+          <button type="button" class="btn btn-ghost" id="stepBack" style="display:none;">Back</button>
+          <button type="button" class="btn btn-primary" id="stepNext">Continue</button>
+          <button type="submit" class="btn btn-primary" id="stepSubmit" style="display:none;">Submit for review</button>
+        </div>
+      </form>
+
+      <p class="form-foot">Already have an account? <a href="login.html">Sign in</a></p>
+    </div>
+
+  </div>
+</main>
+
+<a class="float-community" href="https://t.me/TasaraHub" target="_blank" rel="noopener">
+  <span class="dot-live"></span> Join the community
+</a>
+
+<footer class="simple-footer wrap">
+  TASARA is an initiative and trademark of Iron Mint Stewardship Ltd (RC 9380856). &nbsp;·&nbsp;
+  Engineered by <a href="https://www.eee3.com.ng" target="_blank" rel="noopener">E³</a>
+</footer>
+
+<script src="assets/js/main.js" defer></script>
+<script type="module" src="assets/js/pages/signup.js"></script>
+</body>
+</html>

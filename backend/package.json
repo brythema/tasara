@@ -1,0 +1,22 @@
+{
+  "name": "tasara-firebase-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Small Firebase backend foundation for TASARA: buyer/seller/admin identity, seller verification, government-ID storage, and real-time approval status.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "firebase": "12.19.0",
+    "firebase-admin": "14.5.0"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "5.0.2"
+  },
+  "scripts": {
+    "check": "node scripts/check.mjs",
+    "provision:admin": "node scripts/provision-admin.mjs",
+    "test:rules": "node --test tests/firestore.rules.test.mjs"
+  }
+}

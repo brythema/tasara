@@ -1,0 +1,6 @@
+.vercel
+.env*
+.mimosa/
+node_modules/
+!backend/.env.example
+.DS_Store

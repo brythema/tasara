@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your dashboard — TASARA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body data-page="dashboard-buyer">
+
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <a class="brand" href="index.html">
+      <img src="assets/img/logo.png" alt="TASARA">
+      <span class="brand-word">TASARA</span>
+    </a>
+    <a class="topbar-link" href="#" id="logoutLink">Log out</a>
+  </div>
+</header>
+
+<section class="admin-hero">
+  <div class="photo-frame" aria-hidden="true">
+    <div class="frame-bg" style="background-image:url('assets/photos/hero-3.webp')"></div>
+    <img class="frame-fg" src="assets/photos/hero-3.webp" alt="">
+  </div>
+  <div class="admin-hero-copy wrap">
+    <div class="eyebrow">Your dashboard</div>
+    <h1>Welcome, <span id="userName">there</span>.</h1>
+  </div>
+</section>
+
+<main class="dash-shell wrap page-content">
+  <div class="dash-top">
+    <div>
+      <span class="dash-role-tag">System Participant · Buyer</span>
+    </div>
+  </div>
+
+  <div class="dash-grid">
+    <div class="dash-card">
+      <h3>Your identity</h3>
+      <div class="dash-row"><span>Full name</span><span id="rowName">—</span></div>
+      <div class="dash-row"><span>Email</span><span id="rowEmail">—</span></div>
+      <div class="dash-row"><span>Phone</span><span id="rowPhone">—</span></div>
+      <div class="dash-row"><span>House address</span><span id="rowAddress">—</span></div>
+    </div>
+
+    <div class="dash-card">
+      <h3>Omni &amp; activity</h3>
+      <div class="dash-row"><span>Omni balance</span><span>0 Omni</span></div>
+      <div class="dash-row"><span>Requests submitted</span><span>0</span></div>
+      <div class="dash-row"><span>Merchant Stewards contacted</span><span>0</span></div>
+      <p class="helper" style="margin-top:12px;">Once you submit your first request through the Directory, it'll appear here.</p>
+    </div>
+  </div>
+
+  <div class="community-cta-wrap">
+    <p class="helper" style="margin-bottom:16px;">You're set up as a System Participant. The next step is connecting with the network.</p>
+    <button class="community-cta" id="joinBtn">
+      Join the community
+      <span class="cta-sub">Opens TASARA on Telegram</span>
+    </button>
+  </div>
+</main>
+
+<footer class="simple-footer wrap">
+  TASARA is an initiative and trademark of Iron Mint Stewardship Ltd (RC 9380856). &nbsp;·&nbsp;
+  Engineered by <a href="https://www.eee3.com.ng" target="_blank" rel="noopener">E³</a>
+</footer>
+
+<script src="assets/js/main.js" defer></script>
+<script type="module" src="assets/js/pages/dashboard-buyer.js"></script>
+</body>
+</html>

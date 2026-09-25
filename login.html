@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in — TASARA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body data-page="login">
+
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <a class="brand" href="index.html">
+      <img src="assets/img/logo.png" alt="TASARA">
+      <span class="brand-word">TASARA</span>
+    </a>
+    <a class="topbar-link" href="index.html">← Back to tasara.africa</a>
+  </div>
+</header>
+
+<section class="auth-hero">
+  <div class="photo-frame" aria-hidden="true">
+    <div class="frame-bg" style="background-image:url('assets/photos/hero-3.webp')"></div>
+    <img class="frame-fg" src="assets/photos/hero-3.webp" alt="">
+  </div>
+  <div class="auth-hero-copy wrap">
+    <div class="eyebrow">Welcome back</div>
+    <h1>Sign in to the network.</h1>
+  </div>
+</section>
+
+<main class="auth-shell wrap page-content">
+
+  <div class="loop-pane">
+    <div class="loop">
+      <svg viewBox="0 0 200 200" aria-hidden="true">
+        <circle cx="100" cy="100" r="86" fill="none" stroke="rgba(10,35,66,0.14)" stroke-width="1.5" stroke-dasharray="2 7"/>
+        <g>
+          <circle cx="100" cy="100" r="86" fill="none" stroke="#B8962E" stroke-width="2.5"
+                  stroke-linecap="round" stroke-dasharray="46 494">
+            <animateTransform attributeName="transform" type="rotate" from="0 100 100" to="360 100 100" dur="7s" repeatCount="indefinite"/>
+          </circle>
+          <circle cx="100" cy="14" r="4.5" fill="#0A2342">
+            <animateTransform attributeName="transform" type="rotate" from="0 100 100" to="360 100 100" dur="7s" repeatCount="indefinite"/>
+          </circle>
+        </g>
+        <circle cx="100" cy="100" r="34" fill="none" stroke="#0A2342" stroke-width="1"/>
+        <text x="100" y="105" text-anchor="middle" font-family="Fraunces, serif" font-size="13" fill="#0A2342">ID</text>
+      </svg>
+    </div>
+    <p class="loop-caption">Every sign-in is matched against your record in the network — <b>your history is what verifies you.</b></p>
+  </div>
+
+  <div class="auth-col">
+    <div class="eyebrow" id="stageEyebrow">Sign in</div>
+    <h1 class="auth-title" id="stageTitle">Welcome back to TASARA</h1>
+    <p class="auth-sub" id="stageSub">Sign in to reach your dashboard, track your Omni activity, and stay connected with the network.</p>
+
+    <div class="flip-scene" style="margin-top:24px;">
+      <div class="card" style="margin-top:0;">
+        <div class="card-kicker">TASARA account</div>
+        <h2 style="font-size:1.3rem;">Sign in to your account</h2>
+        <p class="helper">Your account role automatically determines which dashboard opens: buyer, seller, or administrator.</p>
+        <div class="error-banner" id="loginError"></div>
+        <div class="error-banner" id="firebaseNote">Firebase is not connected yet. Add the Firebase web configuration before using account features.</div>
+        <form id="loginForm" style="margin-top:18px;">
+          <div class="field">
+            <label for="loginEmail">Email address</label>
+            <input type="email" id="loginEmail" required placeholder="you@example.com" autocomplete="email">
+          </div>
+          <div class="field">
+            <label for="loginPassword">Password</label>
+            <input type="password" id="loginPassword" required placeholder="••••••••" autocomplete="current-password">
+            <span class="helper">Forgot it? <a href="#" id="resetPasswordLink" style="color:var(--navy); font-weight:600;">Reset password</a></span>
+          </div>
+          <button type="submit" class="btn btn-primary" id="loginSubmit">Sign in</button>
+        </form>
+        <p class="form-foot">New to TASARA? <a href="signup.html">Create an account</a></p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<a class="float-community" href="https://t.me/TasaraHub" target="_blank" rel="noopener">
+  <span class="dot-live"></span> Join the community
+</a>
+
+<footer class="simple-footer wrap">
+  TASARA is an initiative and trademark of Iron Mint Stewardship Ltd (RC 9380856). &nbsp;·&nbsp;
+  Engineered by <a href="https://www.eee3.com.ng" target="_blank" rel="noopener">E³</a>
+</footer>
+
+<script src="assets/js/main.js" defer></script>
+<script type="module" src="assets/js/pages/login.js"></script>
+</body>
+</html>

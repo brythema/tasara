@@ -1,0 +1,126 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isSelf(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function isAdmin() {
+      return signedIn() && request.auth.token.admin == true;
+    }
+
+    function currentUserRole(uid) {
+      return get(/databases/$(database)/documents/users/$(uid)).data.role;
+    }
+
+    function afterUserRole(uid) {
+      return getAfter(/databases/$(database)/documents/users/$(uid)).data.role;
+    }
+
+    function validSellerTier(tier) {
+      return tier is int && tier in [1, 2, 3, 4];
+    }
+
+    function validProfileCreate(data, role) {
+      return data.keys().hasOnly(['name', 'email', 'phone', 'address', 'role', 'createdAt', 'updatedAt'])
+        && data.name is string
+        && data.email is string
+        && data.phone is string
+        && data.address is string
+        && data.role == role;
+    }
+
+    match /users/{uid} {
+      allow read: if isSelf(uid) || isAdmin();
+
+      // Public registration can create only buyer or seller accounts.
+      // The admin account is provisioned with the Admin SDK and cannot be created from the browser.
+      allow create: if isSelf(uid)
+        && (
+          validProfileCreate(request.resource.data, 'buyer')
+          || validProfileCreate(request.resource.data, 'seller')
+        );
+
+      // A user can edit basic profile details, but never their role.
+      allow update: if isSelf(uid)
+        && resource.data.role == request.resource.data.role
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'name', 'phone', 'address', 'updatedAt'
+        ]);
+
+      allow delete: if false;
+    }
+
+    match /buyers/{uid} {
+      allow read: if isSelf(uid) || isAdmin();
+
+      // Buyer registration is atomic with users/{uid}; getAfter() validates the resulting role.
+      allow create: if isSelf(uid)
+        && afterUserRole(uid) == 'buyer'
+        && request.resource.data.keys().hasOnly([
+          'name', 'email', 'phone', 'address', 'createdAt', 'updatedAt'
+        ])
+        && !request.resource.data.keys().hasAny(['tier', 'status']);
+
+      allow update: if isSelf(uid)
+        && currentUserRole(uid) == 'buyer'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'name', 'phone', 'address', 'updatedAt'
+        ]);
+
+      allow delete: if false;
+    }
+
+    match /sellers/{uid} {
+      allow read: if isSelf(uid) || isAdmin();
+
+      // Seller registration is atomic with users/{uid}; the seller starts pending.
+      allow create: if isSelf(uid)
+        && afterUserRole(uid) == 'seller'
+        && request.resource.data.keys().hasOnly([
+          'name', 'email', 'phone', 'address',
+          'businessName', 'businessLocation', 'tier', 'status',
+          'governmentIdPath', 'governmentIdName', 'governmentIdType',
+          'createdAt', 'updatedAt'
+        ])
+        && validSellerTier(request.resource.data.tier)
+        && request.resource.data.status == 'pending'
+        && request.resource.data.governmentIdPath is string
+        && request.resource.data.governmentIdName is string
+        && request.resource.data.governmentIdType is string;
+
+      // Seller can maintain submitted details while not approved. They cannot self-approve,
+      // change the tier, or alter Administrator review fields.
+      allow update: if isAdmin()
+        || (
+          isSelf(uid)
+          && currentUserRole(uid) == 'seller'
+          && request.resource.data.tier == resource.data.tier
+          && request.resource.data.status == resource.data.status
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'name', 'phone', 'address',
+            'businessName', 'businessLocation',
+            'governmentIdPath', 'governmentIdName', 'governmentIdType',
+            'updatedAt'
+          ])
+          && (
+            resource.data.status != 'approved'
+            || !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+              'governmentIdPath', 'governmentIdName', 'governmentIdType'
+            ])
+          )
+        );
+
+      allow delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

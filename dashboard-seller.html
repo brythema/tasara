@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your dashboard — TASARA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body data-page="dashboard-seller">
+
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <a class="brand" href="index.html">
+      <img src="assets/img/logo.png" alt="TASARA">
+      <span class="brand-word">TASARA</span>
+    </a>
+    <a class="topbar-link" href="#" id="logoutLink">Log out</a>
+  </div>
+</header>
+
+<section class="admin-hero">
+  <div class="photo-frame" aria-hidden="true">
+    <div class="frame-bg" style="background-image:url('assets/photos/hero-3.webp')"></div>
+    <img class="frame-fg" src="assets/photos/hero-3.webp" alt="">
+  </div>
+  <div class="admin-hero-copy wrap">
+    <div class="eyebrow">Your dashboard</div>
+    <h1>Welcome, <span id="userName">there</span>.</h1>
+  </div>
+</section>
+
+<main class="dash-shell wrap page-content">
+  <div class="dash-top">
+    <div>
+      <span class="dash-role-tag">Merchant Steward · <span id="tierNameTag">—</span></span>
+    </div>
+  </div>
+
+  <div class="dash-card" style="margin-bottom:20px;" id="statusCard">
+    <span class="status-pill status-pending" id="statusPill"><span class="status-dot"></span> Awaiting Administrator approval</span>
+    <p class="helper" style="margin-top:12px;" id="statusCopy">Your application is pending Administrator review. Full Merchant Steward access remains locked until approval.</p>
+    <p class="helper review-note" id="reviewNote" style="display:none; margin-top:10px;"></p>
+    <div class="error-banner" id="sellerDashboardError"></div>
+  </div>
+
+  <div class="dash-card approved-access" id="approvedArea" style="margin-bottom:20px;">
+    <h3>Merchant Steward access</h3>
+    <p class="helper">Your seller account has been approved and is now active in TASARA. This area is intentionally reserved for approved Merchant Stewards as new seller features are added.</p>
+  </div>
+
+  <div class="dash-card seller-upload" id="sellerUploadArea" style="margin-bottom:20px;">
+    <h3>Verification document</h3>
+    <p class="helper">Upload or replace your government-issued ID while your application is pending or needs review.</p>
+    <div class="field" style="margin-top:14px;">
+      <input type="file" id="dashboardIdUpload" accept=".jpg,.jpeg,.png,.webp,.pdf">
+      <div class="helper" id="dashboardUploadFilename" style="margin-top:8px;"></div>
+    </div>
+    <button type="button" class="btn btn-primary" id="dashboardUploadBtn" style="margin-top:10px;">Upload document</button>
+  </div>
+
+  <div class="dash-grid">
+    <div class="dash-card">
+      <h3>Your details</h3>
+      <div class="dash-row"><span>Full name</span><span id="rowName">—</span></div>
+      <div class="dash-row"><span>Email</span><span id="rowEmail">—</span></div>
+      <div class="dash-row"><span>Phone</span><span id="rowPhone">—</span></div>
+      <div class="dash-row"><span>House address</span><span id="rowAddress">—</span></div>
+    </div>
+
+    <div class="dash-card">
+      <h3>Business</h3>
+      <div class="dash-row"><span>Business name</span><span id="rowBizName">—</span></div>
+      <div class="dash-row"><span>Business location</span><span id="rowBizLoc">—</span></div>
+      <div class="dash-row"><span>Verification document</span><span id="rowFile">—</span></div>
+    </div>
+
+    <div class="dash-card">
+      <h3>Stewardship tier</h3>
+      <div class="dash-row"><span>Tier</span><span id="rowTier">—</span></div>
+      <div class="dash-row"><span>Liquidity stake</span><span id="rowStake">—</span></div>
+      <div class="dash-row"><span>Omni on approval</span><span id="rowOmni">—</span></div>
+      <p class="helper" style="margin-top:12px;">Your stake funds your initial Omni supply and registers you as a vested participant once verified.</p>
+    </div>
+
+    <div class="dash-card">
+      <h3>Omni &amp; activity</h3>
+      <div class="dash-row"><span>Omni balance</span><span>0 Omni <span style="font-weight:400; color:var(--navy-soft);">(pending)</span></span></div>
+      <div class="dash-row"><span>Directory listing</span><span>Not yet live</span></div>
+      <p class="helper" style="margin-top:12px;">You'll appear in the public Directory as soon as your account is approved.</p>
+    </div>
+  </div>
+
+</main>
+
+<footer class="simple-footer wrap">
+  TASARA is an initiative and trademark of Iron Mint Stewardship Ltd (RC 9380856). &nbsp;·&nbsp;
+  Engineered by <a href="https://www.eee3.com.ng" target="_blank" rel="noopener">E³</a>
+</footer>
+
+<script src="assets/js/main.js" defer></script>
+<script type="module" src="assets/js/pages/dashboard-seller.js"></script>
+</body>
+</html>
