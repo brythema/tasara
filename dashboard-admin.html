@@ -1,12 +1,230 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Admin console — TASARA</title>
+<title>Admin console - TASARA</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/styles.css">
+<!--
+  Page-scoped additions for the register, record page and dialogs only.
+  Everything below reuses the existing TASARA tokens from styles.css
+  (--gold / --gold-soft / --glass-dark / --glass-dark-heavy / --radius / --ease-out-expo).
+  The shared stylesheet is untouched, so no other page changes.
+-->
+<style>
+  /* ---------- shared bits ---------- */
+  .admin-lead { color: rgba(242,238,227,0.72); font-size: 0.9rem; margin: 0 0 26px; }
+  .reg-note { color: rgba(242,238,227,0.70); font-size: 0.82rem; margin: -6px 0 14px; }
+  .reg-note b { color: var(--ivory); font-weight: 600; }
+  .reg-hint { color: rgba(242,238,227,0.66); font-size: 0.8rem; margin-top: 10px; }
+
+  /* ---------- status pills (same treatment as .decision-approved / .decision-rejected) ---------- */
+  .decision-buyer   { background: rgba(242,238,227,0.10); color: rgba(242,238,227,0.88); }
+  .decision-seller  { background: rgba(228,199,125,0.16); color: var(--gold-soft); }
+  .decision-pending { background: rgba(212,175,55,0.20);  color: var(--gold-soft); }
+
+  /* ---------- role switch + toolbar ---------- */
+  .reg-bar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+  .reg-tabs {
+    display: inline-flex; gap: 4px; padding: 4px;
+    background: var(--glass-dark-heavy); border: 1px solid var(--glass-dark-border); border-radius: 999px;
+  }
+  .reg-tab {
+    display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+    border: none; background: transparent; color: rgba(242,238,227,0.72);
+    font-family: inherit; font-size: 0.86rem; font-weight: 600;
+    padding: 9px 16px; border-radius: 999px;
+    transition: background 0.3s var(--ease-out-expo), color 0.3s var(--ease-out-expo);
+  }
+  .reg-tab:hover { color: var(--ivory); }
+  .reg-tab[aria-pressed="true"] { background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--navy); }
+  /* the count badge sits inside the active tab, so it needs its own contrast there */
+  .reg-tab[aria-pressed="true"] .pending-badge { background: var(--navy); color: var(--gold-soft); }
+  .reg-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .reg-field { position: relative; display: flex; align-items: center; }
+  .reg-field svg { position: absolute; left: 12px; color: rgba(242,238,227,0.55); pointer-events: none; }
+  .reg-input, .reg-select {
+    background: var(--glass-dark-heavy); border: 1px solid var(--glass-dark-border);
+    color: var(--ivory); font-family: inherit; font-size: 0.86rem;
+    padding: 10px 12px; min-height: 42px; border-radius: var(--radius);
+    transition: border-color 0.3s var(--ease-out-expo);
+  }
+  .reg-input { padding-left: 35px; min-width: 230px; }
+  .reg-input::placeholder { color: rgba(242,238,227,0.5); }
+  .reg-input:hover, .reg-select:hover { border-color: rgba(228,199,125,0.40); }
+  .reg-input:focus, .reg-select:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(46,151,167,0.12); }
+  .reg-select { cursor: pointer; appearance: none; padding-right: 32px;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23F0D78A' stroke-width='2' stroke-linecap='round'><path d='M6 9l6 6 6-6'/></svg>");
+    background-repeat: no-repeat; background-position: right 11px center; }
+  .reg-select option { background: var(--navy); color: var(--ivory); }
+  .reg-select:disabled { opacity: 0.5; cursor: not-allowed; }
+  .reg-export { min-height: 42px; }
+
+  /* ---------- register rows (layout only: .app-row keeps its own border + spacing) ---------- */
+  .reg-head {
+    display: grid; gap: 10px; align-items: center;
+    grid-template-columns: 46px minmax(150px,1.4fr) minmax(180px,1.6fr) minmax(160px,1.5fr) 100px 104px 134px 136px;
+    padding: 0 0 10px; border-bottom: 1px solid rgba(228,199,125,0.10);
+    font-size: 0.68rem; letter-spacing: 0.11em; text-transform: uppercase;
+    color: rgba(242,238,227,0.52); font-weight: 600;
+  }
+  .reg-row {
+    display: grid; gap: 10px; align-items: center;
+    grid-template-columns: 46px minmax(150px,1.4fr) minmax(180px,1.6fr) minmax(160px,1.5fr) 100px 104px 134px 136px;
+    padding-top: 9px; padding-bottom: 9px;
+  }
+  /* styles.css gives .app-main min-width:200px, which would stop the grid tracks
+     from shrinking and overflow the page in the 1000-1160px band */
+  .reg-row > .app-main, .reg-head > div { min-width: 0; }
+  .reg-row:hover { background: rgba(228,199,125,0.045); }
+  /* keep long values to two lines so every row stays the same height */
+  .reg-clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .reg-clamp1 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .reg-ord { font-family: 'Fraunces', serif; font-size: 1rem; color: var(--gold-soft); font-variant-numeric: tabular-nums; }
+  .reg-cell .app-meta + .app-meta { margin-top: 2px; }
+  .reg-num { font-variant-numeric: tabular-nums; }
+  .app-actions.reg-actions { justify-content: flex-end; gap: 6px; flex-wrap: nowrap; }
+  .reg-icon {
+    width: 34px; height: 34px; display: grid; place-items: center; cursor: pointer;
+    border: 1px solid rgba(228,199,125,0.35); border-radius: var(--radius);
+    background: rgba(228,199,125,0.08); color: var(--gold-soft);
+    transition: background 0.3s var(--ease-out-expo), border-color 0.3s var(--ease-out-expo), transform 0.2s ease;
+  }
+  .reg-icon:hover { background: rgba(228,199,125,0.18); border-color: rgba(228,199,125,0.6); transform: translateY(-1px); }
+  .reg-icon.danger { background: transparent; color: #ffb4a6; border-color: rgba(255,180,166,0.35); }
+  .reg-icon.danger:hover { background: rgba(162,59,46,0.16); border-color: rgba(255,180,166,0.7); }
+  .reg-empty { display: block; }
+  /* styles.css styles every button inside .app-actions; these keep the same
+     treatment for the icon buttons and outlined buttons used in the new sections. */
+  .app-actions .reg-icon { padding: 0; border: 1px solid rgba(228,199,125,0.35); border-radius: var(--radius); }
+  .app-actions .reg-icon.danger { background: transparent; color: #ffb4a6; border-color: rgba(255,180,166,0.35); }
+  /* scoped to this page's own actions, so the existing Pending/Decisions panels
+     keep the button treatment the shared stylesheet gives them */
+  .rec-head .app-actions .btn-save,
+  .reg-modal .app-actions .btn-save { border: 1px solid rgba(228,199,125,0.35); font-size: 0.82rem; }
+
+  /* ---------- record page ---------- */
+  /* The top bar is position:fixed. On the register view the hero provides the
+     clearance; the record view replaces the hero, so it needs its own, otherwise
+     the Back button sits underneath the bar and cannot be clicked. */
+  #recordView { padding-top: 56px; }
+  .rec-bar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 18px; }
+  .rec-crumbs { color: rgba(242,238,227,0.70); font-size: 0.82rem; }
+  .rec-crumbs b { color: var(--ivory); font-weight: 600; }
+  .rec-head { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between; }
+  .rec-id { display: flex; gap: 14px; align-items: center; min-width: 220px; }
+  .rec-avatar {
+    width: 54px; height: 54px; flex: 0 0 auto; border-radius: 50%;
+    display: grid; place-items: center; font-family: 'Fraunces', serif; font-size: 1rem;
+    color: var(--gold-soft); background: rgba(228,199,125,0.12); border: 1px solid rgba(228,199,125,0.35);
+  }
+  .rec-head h3 { margin-bottom: 2px; }
+  .rec-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .rec-grid { display: grid; gap: 20px; }
+  @media (min-width: 900px) { .rec-grid { grid-template-columns: minmax(0,1.7fr) minmax(0,1fr); align-items: start; } }
+  .rec-col { display: grid; gap: 20px; }
+  .rec-kv { display: grid; grid-template-columns: 150px 1fr; gap: 9px 16px; margin: 0; font-size: 0.88rem; }
+  .rec-kv dt { color: rgba(242,238,227,0.58); }
+  .rec-kv dd { margin: 0; color: var(--ivory); word-break: break-word; }
+  .rec-kv dd.big { font-family: 'Fraunces', serif; font-size: 1.06rem; }
+  .rec-note-box { border: 1px solid rgba(162,59,46,0.35); background: rgba(162,59,46,0.10);
+    border-radius: var(--radius); padding: 11px 13px; color: #ffb4a6; font-size: 0.84rem; }
+  .rec-danger { border-color: rgba(162,59,46,0.35); background: rgba(162,59,46,0.07); }
+  .rec-danger p { color: rgba(242,238,227,0.66); font-size: 0.86rem; margin: 0 0 14px; }
+
+  /* ---------- dialog + toast ---------- */
+  .reg-scrim {
+    position: fixed; inset: 0; z-index: 90; padding: 20px;
+    display: grid; place-items: center;
+    background: rgba(4,14,30,0.70); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
+  }
+  .reg-scrim[hidden] { display: none !important; }
+  .reg-modal {
+    width: min(460px, 100%); padding: 22px;
+    background: var(--glass-dark-heavy); -webkit-backdrop-filter: blur(20px) saturate(150%);
+    backdrop-filter: blur(20px) saturate(150%);
+    border: 1px solid rgba(162,59,46,0.45); border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-xl); max-height: calc(100dvh - 40px); overflow: auto;
+  }
+  .reg-modal h3 { color: var(--ivory); font-size: 1.06rem; margin-bottom: 10px; }
+  .reg-modal p { color: rgba(242,238,227,0.72); font-size: 0.87rem; line-height: 1.55; margin: 0 0 8px; }
+  .reg-modal .reg-who { font-family: 'Fraunces', serif; font-size: 1.04rem; color: var(--ivory); margin: 12px 0 14px; }
+  .reg-modal .app-actions { justify-content: flex-end; margin-top: 18px; }
+  .reg-toast {
+    position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom)); z-index: 95;
+    transform: translate(-50%, 18px); opacity: 0; pointer-events: none;
+    display: flex; align-items: center; gap: 14px; max-width: min(92vw, 560px);
+    padding: 12px 16px; border-radius: 999px;
+    background: var(--glass-dark-heavy); border: 1px solid var(--glass-dark-border);
+    color: var(--ivory); font-size: 0.85rem; box-shadow: var(--shadow-lg);
+    transition: opacity 0.3s var(--ease-out-expo), transform 0.3s var(--ease-out-expo);
+  }
+  .reg-toast.on { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+  .reg-toast button {
+    background: none; border: none; cursor: pointer; padding: 6px 2px;
+    color: var(--gold-soft); font-family: inherit; font-size: 0.85rem; font-weight: 700;
+    border-bottom: 1px solid var(--gold-soft); white-space: nowrap;
+  }
+
+  /* ============================================================
+     SMALL SCREENS: the row grid becomes a labelled stack.
+     The breakpoint is 1140px, not 1000px, because the eight track
+     minima (1010px) plus gaps exceed the available row width below
+     roughly 1122px, which would overflow the page.
+     ============================================================ */
+  @media (max-width: 1140px) {
+    .reg-head { display: none; }
+    /* two full-width lines, then paired label/value pairs, so a record stays scannable
+       on a phone instead of stacking into a very tall block */
+    .reg-row {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 4px 16px; align-items: start; padding: 14px 0;
+    }
+    .reg-row > .reg-ord, .reg-row > .app-main, .reg-row > .cell-contact, .reg-row > .app-actions { grid-column: 1 / -1; }
+    .reg-ord { font-size: 0.86rem; }
+    .reg-cell::before {
+      content: attr(data-label) " "; display: inline;
+      font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase;
+      color: rgba(242,238,227,0.5);
+    }
+    .app-actions.reg-actions { justify-content: flex-start; margin-top: 8px; gap: 8px; }
+    .reg-icon { width: 44px; height: 44px; }
+    /* the shared stylesheet sizes its small buttons around 35px, which is under the
+       44px touch minimum; lift them and the top-bar link on touch widths only */
+    .app-actions button { min-height: 44px; padding: 10px 16px; }
+    .app-doc .btn-save { min-height: 44px; padding: 10px 14px; font-size: 0.82rem; }
+    .reg-input, .reg-select, .reg-export { min-height: 44px; }
+    .reg-toast button { min-height: 44px; padding: 10px 2px; }
+    .topbar-link { display: inline-flex; align-items: center; min-height: 44px; padding: 0 2px; }
+    .reg-clamp { display: block; -webkit-line-clamp: unset; overflow: visible; }
+    .reg-clamp1 { white-space: normal; overflow: visible; text-overflow: clip; }
+    .reg-bar { flex-direction: column; align-items: stretch; }
+    .reg-tabs { width: 100%; display: grid; grid-template-columns: repeat(3, 1fr); border-radius: var(--radius-lg); }
+    .reg-tab { justify-content: center; min-height: 44px; border-radius: var(--radius); }
+    .reg-tools { width: 100%; }
+    .reg-field { width: 100%; }
+    .reg-input { width: 100%; min-width: 0; }
+    .reg-select { flex: 1 1 130px; }
+    .reg-export { width: 100%; justify-content: center; }
+    .rec-id { width: 100%; }
+    .rec-head .app-actions { width: 100%; }
+    .rec-head .app-actions button { flex: 1 1 auto; }
+    .rec-kv { grid-template-columns: 1fr; gap: 2px 0; }
+    .rec-kv dt { font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; margin-top: 9px; }
+    .rec-kv dd.big { font-size: 1.02rem; }
+  }
+  @media (max-width: 560px) {
+    .admin-lead, .reg-note { font-size: 0.84rem; }
+    .reg-scrim { padding: 0; align-items: end; }
+    .reg-modal { width: 100%; max-width: 100%; border-radius: var(--radius-lg) var(--radius-lg) 0 0; padding: 20px 18px calc(20px + env(safe-area-inset-bottom)); }
+    .reg-modal .app-actions { flex-direction: column; }
+    .reg-modal .app-actions button { width: 100%; }
+    .reg-toast { left: 16px; right: 16px; max-width: none; transform: translate(0, 18px); border-radius: var(--radius-lg); }
+    .reg-toast.on { transform: translate(0, 0); }
+  }
+</style>
 </head>
 <body class="admin-theme" data-page="dashboard-admin">
 
@@ -20,7 +238,7 @@
   </div>
 </header>
 
-<section class="admin-hero">
+<section class="admin-hero" id="adminHero">
   <div class="photo-frame" aria-hidden="true">
     <div class="frame-bg" style="background-image:url('assets/photos/hero-3.webp')"></div>
     <img class="frame-fg" src="assets/photos/hero-3.webp" alt="">
@@ -32,27 +250,88 @@
 </section>
 
 <main class="admin-shell wrap page-content">
+
   <div class="error-banner" id="adminError"></div>
-  <p style="color:rgba(242,238,227,0.6); font-size:0.9rem; margin-bottom:26px;">Review and verify Merchant Steward applications under the Iron Standard.</p>
 
-  <div class="admin-stat-row">
-    <div class="admin-stat"><div class="num" id="statPending">0</div><div class="lbl">Pending review</div></div>
-    <div class="admin-stat"><div class="num" id="statApproved">0</div><div class="lbl">Approved</div></div>
-    <div class="admin-stat"><div class="num" id="statRejected">0</div><div class="lbl">Rejected</div></div>
-    <div class="admin-stat"><div class="num" id="statOmni">0</div><div class="lbl">Omni committed</div></div>
+  <!-- ================= CONSOLE ================= -->
+  <div id="consoleView">
+    <p class="admin-lead">Review and verify every registered account under the Iron Standard.</p>
+
+    <div class="admin-stat-row">
+      <div class="admin-stat"><div class="num" id="statTotal">0</div><div class="lbl">Registered accounts</div></div>
+      <div class="admin-stat"><div class="num" id="statPending">0</div><div class="lbl">Pending review</div></div>
+      <div class="admin-stat"><div class="num" id="statApproved">0</div><div class="lbl">Approved</div></div>
+      <div class="admin-stat"><div class="num" id="statOmni">0</div><div class="lbl">Omni committed</div></div>
+    </div>
+
+    <div class="reg-bar">
+      <div class="reg-tabs" role="group" aria-label="Roster view">
+        <button class="reg-tab" type="button" data-view="all" aria-pressed="true">All <span class="pending-badge" id="cAll">0</span></button>
+        <button class="reg-tab" type="button" data-view="buyers" aria-pressed="false">Buyers <span class="pending-badge" id="cBuyers">0</span></button>
+        <button class="reg-tab" type="button" data-view="sellers" aria-pressed="false">Sellers <span class="pending-badge" id="cSellers">0</span></button>
+      </div>
+
+      <div class="reg-tools">
+        <label class="reg-field">
+          <span class="sr-only">Search the register</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+          <input class="reg-input" type="search" id="q" placeholder="Search name, email, business" autocomplete="off">
+        </label>
+        <select class="reg-select" id="statusFilter" aria-label="Filter by seller status" title="Applies to sellers">
+          <option value="">Any status</option>
+          <option value="pending">Pending</option>
+          <option value="approved">Approved</option>
+          <option value="rejected">Rejected</option>
+        </select>
+        <select class="reg-select" id="tierFilter" aria-label="Filter by seller tier" title="Applies to sellers">
+          <option value="">Any tier</option>
+          <option value="1">Tier 1</option>
+          <option value="2">Tier 2</option>
+          <option value="3">Tier 3</option>
+          <option value="4">Tier 4</option>
+        </select>
+        <select class="reg-select" id="sortBy" aria-label="Sort">
+          <option value="account" selected>Account number</option>
+          <option value="newest">Newest signup first</option>
+          <option value="oldest">Oldest signup first</option>
+          <option value="name">Name A to Z</option>
+        </select>
+        <button class="btn-save reg-export" type="button" id="exportTab" title="Exports the rows currently shown">Export CSV</button>
+      </div>
+    </div>
+
+    <div class="admin-panel">
+      <h3>The register <span class="pending-badge" id="regBadge">0</span></h3>
+      <div class="reg-note" id="rowCount">Showing 0 accounts</div>
+      <div class="reg-head" aria-hidden="true">
+        <div>Signup #</div>
+        <div>Person</div>
+        <div>Contact</div>
+        <div>Location</div>
+        <div>Role</div>
+        <div>Status</div>
+        <div>Signed up</div>
+        <div style="text-align:right">Actions</div>
+      </div>
+      <div id="rosterList"></div>
+      <div class="empty-note reg-empty" id="rosterEmpty" style="display:none;">No accounts have registered yet.</div>
+    </div>
+
+    <div class="admin-panel">
+      <h3>Pending applications <span class="pending-badge" id="pendingBadge">0</span></h3>
+      <div id="pendingList"></div>
+      <div class="empty-note" id="pendingEmpty" style="display:none;">No applications waiting on review right now.</div>
+    </div>
+
+    <div class="admin-panel">
+      <h3>Recent decisions</h3>
+      <div id="decidedList"></div>
+      <div class="empty-note" id="decidedEmpty">No decisions made yet - approvals and rejections will show up here.</div>
+    </div>
   </div>
 
-  <div class="admin-panel">
-    <h3>Pending applications <span class="pending-badge" id="pendingBadge"></span></h3>
-    <div id="pendingList"></div>
-    <div class="empty-note" id="pendingEmpty" style="display:none;">No applications waiting on review right now.</div>
-  </div>
-
-  <div class="admin-panel">
-    <h3>Recent decisions</h3>
-    <div id="decidedList"></div>
-    <div class="empty-note" id="decidedEmpty">No decisions made yet — approvals and rejections will show up here.</div>
-  </div>
+  <!-- ================= FULL-PAGE RECORD ================= -->
+  <div id="recordView" hidden></div>
 </main>
 
 <footer class="simple-footer wrap" style="padding-top:16px; color:rgba(242,238,227,0.45);">
@@ -60,7 +339,24 @@
   Engineered by <a href="https://www.eee3.com.ng" target="_blank" rel="noopener" style="color:var(--gold-soft); border-color:var(--gold-soft);">E³</a>
 </footer>
 
+<div class="reg-scrim" id="modalScrim" hidden>
+  <div class="reg-modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-describedby="modalBody">
+    <h3 id="modalTitle">Delete this account?</h3>
+    <p id="modalBody">This removes the person and their stored details from the register.</p>
+    <div class="reg-who" id="modalName"></div>
+    <p>This permanently removes the account and cannot be undone.</p>
+    <div class="app-actions">
+      <button class="btn-save" type="button" id="modalCancel">Cancel</button>
+      <button class="btn-reject" type="button" id="modalDelete">Delete account</button>
+    </div>
+  </div>
+</div>
+
+<div class="reg-toast" id="toast" role="status" aria-live="polite"><span id="toastMsg"></span><button type="button" id="toastAction" hidden>Undo</button></div>
+
 <script src="assets/js/main.js" defer></script>
 <script type="module" src="assets/js/pages/dashboard-admin.js"></script>
 </body>
 </html>
+
+

@@ -16,18 +16,20 @@ import {
 } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
 import { COLLECTIONS, ROLES, SELLER_STATUSES } from './constants.js';
 import { getSellerTier } from './tiers.js';
+import { allocateAccountNumber } from './accounts.js';
 
 function cleanEmail(email) {
   return String(email ?? '').trim().toLowerCase();
 }
 
-function commonProfile({ name, email, phone, address, role }) {
+function commonProfile({ name, email, phone, address, role, accountNumber }) {
   return {
     name: String(name ?? '').trim(),
     email: cleanEmail(email),
     phone: String(phone ?? '').trim(),
     address: String(address ?? '').trim(),
     role,
+    accountNumber,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp()
   };
@@ -44,9 +46,12 @@ export async function registerBuyer({ auth, db, name, email, password, phone, ad
   validateCommon({ name, email, password, phone, address });
   const credential = await createUserWithEmailAndPassword(auth, cleanEmail(email), password);
   const uid = credential.user.uid;
-  const profile = commonProfile({ name, email, phone, address, role: ROLES.BUYER });
 
   try {
+    // Reserved inside the try so a failed registration still cleans up the auth user.
+    const accountNumber = await allocateAccountNumber({ db });
+    const profile = commonProfile({ name, email, phone, address, role: ROLES.BUYER, accountNumber });
+
     const batch = writeBatch(db);
     batch.set(doc(db, COLLECTIONS.USERS, uid), profile);
     batch.set(doc(db, COLLECTIONS.BUYERS, uid), {
@@ -54,6 +59,7 @@ export async function registerBuyer({ auth, db, name, email, password, phone, ad
       email: profile.email,
       phone: profile.phone,
       address: profile.address,
+      accountNumber,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     });
@@ -84,9 +90,11 @@ export async function registerSeller({
   const resolvedTier = getSellerTier(tier);
   const credential = await createUserWithEmailAndPassword(auth, cleanEmail(email), password);
   const uid = credential.user.uid;
-  const profile = commonProfile({ name, email, phone, address, role: ROLES.SELLER });
 
   try {
+    const accountNumber = await allocateAccountNumber({ db });
+    const profile = commonProfile({ name, email, phone, address, role: ROLES.SELLER, accountNumber });
+
     const batch = writeBatch(db);
     batch.set(doc(db, COLLECTIONS.USERS, uid), profile);
     batch.set(doc(db, COLLECTIONS.SELLERS, uid), {
@@ -98,6 +106,7 @@ export async function registerSeller({
       businessLocation: String(businessLocation).trim(),
       tier: resolvedTier.id,
       status: SELLER_STATUSES.PENDING,
+      accountNumber,
       governmentIdPath: '',
       governmentIdName: '',
       governmentIdType: '',

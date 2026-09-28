@@ -1,4 +1,4 @@
-{
+﻿{
   "name": "tasara-firebase-backend",
   "version": "1.0.0",
   "private": true,
@@ -17,6 +17,8 @@
   "scripts": {
     "check": "node scripts/check.mjs",
     "provision:admin": "node scripts/provision-admin.mjs",
-    "test:rules": "node --test tests/firestore.rules.test.mjs"
+    "test:rules": "node --test tests/firestore.rules.test.mjs",
+    "backfill:accounts": "node scripts/backfill-account-numbers.mjs"
   }
 }
+

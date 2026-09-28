@@ -1,4 +1,4 @@
-/* ============================================================
+﻿/* ============================================================
    TASARA — Premium Design System v4
    African economic infrastructure × editorial luxury
    Navy / Ivory / Gold. Fraunces + IBM Plex Sans.
@@ -357,6 +357,34 @@ body.menu-open { overflow: hidden; }
   .hero-slide { animation: none; opacity: 0; }
   .hero-slide:first-child { opacity: 1; }
   .hero-slide .frame-fg { animation: none; }
+}
+/* Mobile: a phone hero is a tall portrait box, so covering it with a landscape
+   photo discards roughly three quarters of the frame. Show it whole instead,
+   letterboxed on a blurred echo of itself — the treatment this hero was
+   designed around, per the note above .hero-full. Desktop is untouched. */
+@media (max-width: 760px) {
+  .hero-slide .frame-fg { object-fit: contain; }
+  .hero-slide .frame-bg {
+    display: block;
+    position: absolute; top: 0; right: 0; bottom: 0; left: 0;
+    background-size: cover;
+    background-position: center;
+    filter: blur(16px) saturate(1.25) brightness(0.7);
+    transform: scale(1.08);
+  }
+
+  /* The inner pages use the same photo treatment, so they get the same rule.
+     Higher specificity is needed because .photo-frame .frame-bg hides the echo
+     later in this file and a plain .page-hero rule would lose to it. */
+  .page-hero .photo-frame .frame-fg { object-fit: contain; }
+  .page-hero .photo-frame .frame-bg {
+    display: block;
+    position: absolute; top: 0; right: 0; bottom: 0; left: 0;
+    background-size: cover;
+    background-position: center;
+    filter: blur(16px) saturate(1.25) brightness(0.7);
+    transform: scale(1.08);
+  }
 }
 .hero-inner {
   position: relative; z-index: 3;
@@ -1295,3 +1323,10 @@ body.admin-theme { background: linear-gradient(165deg, var(--navy-deep) 0%, var(
 .btn-save:hover { background:rgba(228,199,125,0.16); }
 .missing-doc { color:#ffb4a6; }
 .pending-badge:empty { display:none; }
+
+
+
+
+
+
+

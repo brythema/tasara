@@ -26,13 +26,20 @@ service cloud.firestore {
       return tier is int && tier in [1, 2, 3, 4];
     }
 
+    // Account numbers are issued from counters/accounts at registration.
+    // They are never editable afterwards, so they stay a reliable identifier.
+    function validAccountNumber(value) {
+      return value is int && value >= 1;
+    }
+
     function validProfileCreate(data, role) {
-      return data.keys().hasOnly(['name', 'email', 'phone', 'address', 'role', 'createdAt', 'updatedAt'])
+      return data.keys().hasOnly(['name', 'email', 'phone', 'address', 'role', 'accountNumber', 'createdAt', 'updatedAt'])
         && data.name is string
         && data.email is string
         && data.phone is string
         && data.address is string
-        && data.role == role;
+        && data.role == role
+        && validAccountNumber(data.accountNumber);
     }
 
     match /users/{uid} {
@@ -46,14 +53,17 @@ service cloud.firestore {
           || validProfileCreate(request.resource.data, 'seller')
         );
 
-      // A user can edit basic profile details, but never their role.
+      // A user can edit basic profile details, but never their role or account number.
       allow update: if isSelf(uid)
         && resource.data.role == request.resource.data.role
+        && request.resource.data.accountNumber == resource.data.accountNumber
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'name', 'phone', 'address', 'updatedAt'
         ]);
 
-      allow delete: if false;
+      // Administrator removal from the dashboard. The sign-in account itself is
+      // removed separately with the Admin SDK.
+      allow delete: if isAdmin();
     }
 
     match /buyers/{uid} {
@@ -63,17 +73,19 @@ service cloud.firestore {
       allow create: if isSelf(uid)
         && afterUserRole(uid) == 'buyer'
         && request.resource.data.keys().hasOnly([
-          'name', 'email', 'phone', 'address', 'createdAt', 'updatedAt'
+          'name', 'email', 'phone', 'address', 'accountNumber', 'createdAt', 'updatedAt'
         ])
-        && !request.resource.data.keys().hasAny(['tier', 'status']);
+        && !request.resource.data.keys().hasAny(['tier', 'status'])
+        && validAccountNumber(request.resource.data.accountNumber);
 
       allow update: if isSelf(uid)
         && currentUserRole(uid) == 'buyer'
+        && request.resource.data.accountNumber == resource.data.accountNumber
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'name', 'phone', 'address', 'updatedAt'
         ]);
 
-      allow delete: if false;
+      allow delete: if isAdmin();
     }
 
     match /sellers/{uid} {
@@ -85,23 +97,29 @@ service cloud.firestore {
         && request.resource.data.keys().hasOnly([
           'name', 'email', 'phone', 'address',
           'businessName', 'businessLocation', 'tier', 'status',
+          'accountNumber',
           'governmentIdPath', 'governmentIdName', 'governmentIdType',
           'createdAt', 'updatedAt'
         ])
         && validSellerTier(request.resource.data.tier)
+        && validAccountNumber(request.resource.data.accountNumber)
         && request.resource.data.status == 'pending'
         && request.resource.data.governmentIdPath is string
         && request.resource.data.governmentIdName is string
         && request.resource.data.governmentIdType is string;
 
       // Seller can maintain submitted details while not approved. They cannot self-approve,
-      // change the tier, or alter Administrator review fields.
-      allow update: if isAdmin()
+      // change the tier, change the account number, or alter Administrator review fields.
+      allow update: if (
+          isAdmin()
+          && request.resource.data.accountNumber == resource.data.accountNumber
+        )
         || (
           isSelf(uid)
           && currentUserRole(uid) == 'seller'
           && request.resource.data.tier == resource.data.tier
           && request.resource.data.status == resource.data.status
+          && request.resource.data.accountNumber == resource.data.accountNumber
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
             'name', 'phone', 'address',
             'businessName', 'businessLocation',
@@ -115,6 +133,27 @@ service cloud.firestore {
             ])
           )
         );
+
+      allow delete: if isAdmin();
+    }
+
+    // Sequential account numbers, issued at registration.
+    // A signed-in client may read the counter to reserve a number, but may only
+    // ever move it forward by exactly one and may never reset or delete it.
+    // Note the deliberate trade-off: an authenticated client can advance the
+    // counter without completing a registration, which would leave a gap in the
+    // sequence. That is accepted here; see the plan document.
+    match /counters/accounts {
+      allow get: if signedIn();
+      allow list: if false;
+
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['last'])
+        && request.resource.data.last == 1;
+
+      allow update: if signedIn()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['last'])
+        && request.resource.data.last == resource.data.last + 1;
 
       allow delete: if false;
     }
