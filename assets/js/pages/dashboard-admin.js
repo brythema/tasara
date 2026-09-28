@@ -39,7 +39,7 @@ function statusInfo(r) {
 }
 
 /* ---------- state ---------- */
-const state = { view: 'all', q: '', status: '', tier: '', sort: 'account', recordId: null };
+const state = { view: 'all', q: '', status: '', tier: '', sort: 'newest', recordId: null };
 let RECORDS = [];
 let services = null;
 let pendingDeleteId = null;
