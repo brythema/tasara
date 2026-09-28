@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -53,15 +53,24 @@
     <div class="hero-slides" aria-hidden="true">
       <div class="hero-slide">
         <div class="frame-bg" style="background-image:url('assets/photos/hero-1.webp')"></div>
-        <img class="frame-fg" src="assets/photos/hero-1.webp" alt="">
+        <picture>
+          <source media="(max-width: 760px)" srcset="assets/photos/hero-1-portrait.webp">
+          <img class="frame-fg" src="assets/photos/hero-1.webp" alt="">
+        </picture>
       </div>
       <div class="hero-slide">
         <div class="frame-bg" style="background-image:url('assets/photos/hero-2.webp')"></div>
-        <img class="frame-fg" src="assets/photos/hero-2.webp" alt="">
+        <picture>
+          <source media="(max-width: 760px)" srcset="assets/photos/hero-2-portrait.webp">
+          <img class="frame-fg" src="assets/photos/hero-2.webp" alt="">
+        </picture>
       </div>
       <div class="hero-slide">
         <div class="frame-bg" style="background-image:url('assets/photos/hero-3.webp')"></div>
-        <img class="frame-fg" src="assets/photos/hero-3.webp" alt="">
+        <picture>
+          <source media="(max-width: 760px)" srcset="assets/photos/hero-3-portrait.webp">
+          <img class="frame-fg" src="assets/photos/hero-3.webp" alt="">
+        </picture>
       </div>
     </div>
     <div class="wrap hero-inner">
