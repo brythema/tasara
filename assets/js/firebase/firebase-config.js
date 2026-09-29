@@ -16,7 +16,9 @@ try {
 
 export const firebaseConfig = Object.freeze(config);
 
-export const BUYER_TELEGRAM_URL = 'https://t.me/TasaraHub';
+export const BUYER_TELEGRAM_URL = 'https://t.me/+M-99MJ2dLwk3Yjg0';
+export const SELLER_TELEGRAM_URL = 'https://t.me/+_2-rJSa02_kyNGJk';
+export const COMMUNITY_TELEGRAM_URL = 'https://t.me/TasaraHub';
 
 const REQUIRED_KEYS = ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'];
 

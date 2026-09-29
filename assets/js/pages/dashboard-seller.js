@@ -3,6 +3,7 @@ import { getCurrentProfile, observeAuth } from '../firebase/auth.js';
 import { ROLES, SELLER_STATUSES } from '../firebase/constants.js';
 import { observeSeller } from '../firebase/profiles.js';
 import { getSellerTier } from '../firebase/tiers.js';
+import { SELLER_TELEGRAM_URL } from '../firebase/firebase-config.js';
 import { uploadSellerGovernmentId } from '../firebase/seller-documents.js';
 
 function setText(id, value) {
@@ -111,6 +112,12 @@ onReady(async () => {
         uploadBtn.disabled = false;
         uploadBtn.textContent = 'Upload document';
       }
+    });
+
+    $('joinSellerBtn')?.addEventListener('click', () => {
+      const btn = $('joinSellerBtn');
+      btn.classList.add('tilted');
+      setTimeout(() => window.open(SELLER_TELEGRAM_URL, '_blank', 'noopener'), 480);
     });
   } catch (error) {
     console.error(error);
