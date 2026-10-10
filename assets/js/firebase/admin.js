@@ -72,15 +72,16 @@ export async function decideSeller({ db, uid, status, reviewerUid, reviewNote = 
  *
  * @returns {Promise<{ authDeleted: boolean }>}
  */
-export async function deleteAccount({ db, uid, role, governmentIdPath = '' }) {
+export async function deleteAccount({ db, auth, uid, role, governmentIdPath = '' }) {
   if (!uid) throw new Error('A user id is required.');
   if (role !== 'buyer' && role !== 'seller') throw new Error('A valid account role is required.');
 
   if (governmentIdPath) {
-    /* EXPERIMENT: the government ID lives in the Vercel Blob store; a hard
-       failure removing it still aborts before any register record vanishes,
-       matching the original delete-order guarantee. A missing blob is fine. */
-    await deleteGovernmentIdBlob(governmentIdPath);
+    /* The government ID lives in the Vercel Blob store; a hard failure
+       removing it still aborts before any register record vanishes, matching
+       the original delete-order guarantee. A missing blob is fine. The
+       tdoc-delete endpoint requires the admin's ID token. */
+    await deleteGovernmentIdBlob(governmentIdPath, auth);
   }
 
   const collectionName = role === 'buyer' ? COLLECTIONS.BUYERS : COLLECTIONS.SELLERS;

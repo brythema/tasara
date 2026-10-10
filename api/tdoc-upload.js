@@ -1,12 +1,17 @@
 import { put } from '@vercel/blob';
+import { documentOwnerUid, verifyRequestToken } from './_lib/auth.js';
 
-/* Tasara experiment: Vercel Blob document store (replaces Firebase Storage).
+/* Tasara: Vercel Blob document store (replaces Firebase Storage).
    Sellers upload the government ID to this endpoint; the function stores it
    in the PRIVATE "tasara-docs" Blob store (team hemabryt, region cpt1, token
    from the BLOB_READ_WRITE_TOKEN project env) and reports the blob URL. That
    URL — which embeds the unguessable Firebase UID — is what Firestore's
    governmentIdPath now holds. Reading it always goes through api/tdoc-read.js
    (token-authenticated), so the document is never exposed to the open web.
+
+   PRODUCTION hardening: the caller must present a valid Firebase ID token
+   (Bearer header) whose UID matches the seller-document path, so the endpoint
+   can never serve as an anonymous file sink.
 
    Upload cap is 4 MB: Vercel serverless function request bodies are capped at
    about 4.5 MB, and a scanned ID fits comfortably in 4 MB. The client
@@ -52,9 +57,14 @@ export default async function handler(req, res) {
   }
 
   try {
+    const claims = await verifyRequestToken(req);
     const path = new URL(req.url, 'http://localhost').searchParams.get('path') || '';
     if (!SELLER_DOCUMENT_PATH.test(path)) {
       res.status(400).json({ error: 'A valid seller document path is required.' });
+      return;
+    }
+    if (!claims || claims.uid !== documentOwnerUid(path)) {
+      res.status(claims ? 403 : 401).json({ error: 'Sign in as the document owner to upload it.' });
       return;
     }
 
@@ -64,7 +74,7 @@ export default async function handler(req, res) {
       return;
     }
     if (body.length > MAX_UPLOAD_BYTES) {
-      res.status(413).json({ error: 'The file exceeds the 4 MB experiment limit.' });
+      res.status(413).json({ error: 'The file exceeds the 4 MB limit.' });
       return;
     }
 

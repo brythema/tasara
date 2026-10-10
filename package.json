@@ -1,8 +1,9 @@
 {
-  "name": "tasara-experiment",
-  "version": "0.1.0",
+  "name": "tasara",
+  "version": "1.0.0",
   "private": true,
   "dependencies": {
-    "@vercel/blob": "2.8.1"
+    "@vercel/blob": "2.8.1",
+    "firebase-admin": "14.5.0"
   }
 }

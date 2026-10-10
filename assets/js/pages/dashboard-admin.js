@@ -360,13 +360,17 @@ function renderRecord() {
   loadDocPreview(r);
 }
 
-/* EXPERIMENT: the document preview loads from the Vercel Blob store through
-   the same URL helper the download buttons use. */
+/* The document preview loads from the Vercel Blob store through the same URL
+   helper the download buttons use; the read proxy requires this admin's ID
+   token (the functions verify the admin claim server-side). */
 async function loadDocPreview(r) {
   const img = document.getElementById('docPreviewImg');
   if (!img || !r || !r.governmentIdPath) return;
   try {
-    img.src = await getSellerGovernmentIdDownloadUrl({ path: r.governmentIdPath });
+    img.src = await getSellerGovernmentIdDownloadUrl({
+      path: r.governmentIdPath,
+      token: await services.auth.currentUser.getIdToken()
+    });
   } catch (_) {
     img.remove();
   }
@@ -454,7 +458,7 @@ async function confirmDelete() {
   button.textContent = 'Deleting…';
   clearError();
   try {
-    const result = await deleteAccount({ db: services.db, uid: id, role: r._role, governmentIdPath: r.governmentIdPath || '' });
+    const result = await deleteAccount({ db: services.db, auth: services.auth, uid: id, role: r._role, governmentIdPath: r.governmentIdPath || '' });
     RECORDS = RECORDS.filter(x => x.id !== id);
     if (wasOpen) { state.recordId = null; history.replaceState(null, '', location.pathname + location.search); }
     closeConfirm();
@@ -501,7 +505,7 @@ async function act(kind, id) {
   if (kind === 'idfile') {
     if (!r.governmentIdPath) { toast('No government ID is attached to this application.'); return; }
     try {
-      await saveSellerGovernmentId({ path: r.governmentIdPath, filename: r.governmentIdName || 'government-id' });
+      await saveSellerGovernmentId({ auth: services.auth, path: r.governmentIdPath, filename: r.governmentIdName || 'government-id' });
       toast('ID file saved.');
     } catch (error) {
       console.error(error);
@@ -512,7 +516,10 @@ async function act(kind, id) {
   if (kind === 'viewid') {
     if (!r.governmentIdPath) { toast('No government ID is attached to this application.'); return; }
     try {
-      const url = await getSellerGovernmentIdDownloadUrl({ path: r.governmentIdPath });
+      const url = await getSellerGovernmentIdDownloadUrl({
+        path: r.governmentIdPath,
+        token: await services.auth.currentUser.getIdToken()
+      });
       window.open(url, '_blank', 'noopener');
     } catch (error) {
       console.error(error);

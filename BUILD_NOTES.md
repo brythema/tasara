@@ -46,72 +46,57 @@ The old `/api/*` calls were removed from the frontend. The website now uses Fire
 
 The Firebase Emulator Suite rules test could not be executed here because npm dependency installation did not complete in the available environment. Run `npm install` and then `npm run test:rules` from `backend/` on the development machine before deploying the rules.
 
-## EXPERIMENT — Vercel Blob document store (2026-10-10)
+## MIGRATION — Vercel Blob document store to production (2026-10-10)
 
-**Why.** Firebase Storage is unusable on this account (free plan, billing card
-rejected by Firebase), so seller government-ID uploads fail while registration
-still works. This repository is an experiment: the document upload is routed to
-**Vercel Blob** instead of Firebase Storage. The live site (`brythema/tasara` @
-`main`, deployed to tasara.africa) is deliberately untouched.
+The 2026-10-10 Blob experiment (repo `tasara-experiment`, tasara-experiment.vercel.app)
+was validated end-to-end and promoted into this repository the same day. The
+document store history is preserved commit-for-commit: the seven experiment
+commits were cherry-picked onto `main`, then hardened.
 
-**What changed.**
+**What runs now.**
 
-- `api/tdoc-upload.js` — Vercel function: raw-body POST (`?path=seller-government-id/<uid>/<file>`),
-  stores the file in the **private** "tasara-docs" Blob store (`put`,
-  `addRandomSuffix: false`) and returns the blob URL. The path input is
-  regex-validated to our own shape only.
-- `api/tdoc-read.js` — Vercel function: the token-authenticated read proxy.
-  The store is private, so a browser can never fetch a blob URL directly; the
-  admin dashboard loads documents through this endpoint, which fetches with
-  the project's `BLOB_READ_WRITE_TOKEN` and streams the bytes back. Only
-  seller-document URLs are accepted.
-- `api/tdoc-delete.js` — Vercel function: removes a blob by URL (`del`); a
-  missing blob is not an error, and only seller-document URLs are accepted.
-- `assets/js/firebase/seller-documents.js` — same four public functions, now
-  backed by the endpoints. Firestore's `governmentIdPath` holds the blob URL;
-  `governmentIdName/Type` are unchanged, so seller signup and every admin flow
-  keep working without knowing the backend.
-- `assets/js/firebase/admin.js` — `deleteAccount` removes the document from
-  the Blob store before the register record (same order as before).
-- `assets/js/pages/dashboard-admin.js` — "View ID" button + inline image
-  preview in the seller record (the owner requirement: admin sees the image
-  next to the signup details they already have).
-- Document size cap: **4 MB** (live site keeps 10 MB). Vercel function request
-  bodies are capped near 4.5 MB, so the cap is set under it.
+- `api/tdoc-upload.js`, `api/tdoc-read.js`, `api/tdoc-delete.js` — Vercel
+  functions over the **private** "tasara-docs" Blob store (team hemabryt,
+  region CPT1). Firestore's `governmentIdPath` holds the private blob URL
+  (the access capability; it embeds the unguessable UID). Upload cap 4 MB
+  (Vercel function bodies cap near 4.5 MB).
+- `assets/js/firebase/seller-documents.js` — same public API as the Firebase
+  Storage version, now backed by the endpoints, with ID-token plumbing.
+- `assets/js/firebase/admin.js` + `assets/js/pages/dashboard-admin.js` —
+  "View ID" button + inline image preview + record editor (profile-edits);
+  document actions present the admin's ID token.
+- `assets/js/firebase/profile-edits.js` — `saveMyDetails` / `saveRecordDetails`;
+  Edit-details cards on the seller & buyer dashboards; admin "Edit details"
+  panel (tier included; email is never editable in the UI).
+- Seller re-approval: an APPROVED seller's self-write re-enters `pending`
+  (deployed to the shared `tasara-2c9f4e` rules on 2026-10-10; pending and
+  rejected sellers keep the legacy no-status write so older flows still work).
 
-**Required environment.** The Vercel project carries the store's env vars
-(`BLOB_READ_WRITE_TOKEN` secret, `BLOB_STORE_ID`), created when the
-"tasara-docs" store (team hemabryt, region CPT1, private) was connected to
-the project from the dashboard. They are server-side only and never in this
-repository. Hobby free quota for the store: 1 GB storage / 10 GB transfer.
+**Security model (production).**
 
-**Security model (read before trusting this).**
-
-- The "tasara-docs" store is **private**: raw blob URLs are not readable by
-  the open web (the smoke test asserts this). The only read path is
-  `api/tdoc-read.js`, which authenticates server-side with the store token.
-- The Firestore rules stay strict: `sellers/{uid}` is readable only by the
-  seller themselves or an admin (`match /{document=**} allow read, write: if
-  false` deny-all catch-all). So the blob URL is never written where ordinary
-  users can read it — only owner + admin + the seller themselves.
-- The upload and read endpoints are same-origin and path-regex-locked to
+- All three tdoc endpoints verify a Firebase ID token server-side via
+  firebase-admin (`api/_lib/auth.js`): upload requires the document owner's
+  token; delete requires owner-or-admin; read requires the **admin custom
+  claim** (the experiment's "UI-gated" caveat is closed). Tokens ride a
+  Bearer header, or a `?token=` query parameter for `<img>`/download flows.
+- The "tasara-docs" store is private: raw blob URLs are not readable by the
+  open web. Paths/URLs are regex-locked to
   `seller-government-id/<uid>/government-id-<ts>.(jpg|jpeg|png|webp|pdf)`.
-- **Caveat (accepted for the experiment):** the read proxy is gated by the
-  admin UI, not by a server-side claim check; anyone who can hit the
-  endpoint with a valid document URL can read that one document. Document
-  URLs are only held in Firestore where the strict rules apply, so this is
-  acceptable for the experiment. For a permanent system, add server-side
-  Firebase-claim verification to the read proxy.
+- The read proxy sends `Cache-Control: no-store`; government documents never
+  linger in caches. The read token is a 1-hour admin ID token in a URL query —
+  the same pattern Firebase Storage download URLs use for their file tokens.
 
-**Shared Firestore database.** This experiment uses the *same* Firebase
-project (`tasara-2c9f4e`) for auth, Firestore and admin claims — only the
-document *storage* changed. Consequence: a seller registered on
-`tasara-exp` appears in the live admin dashboard too, and the live dashboard's
-"Save ID" will fail for them (their document is in the Blob store, not
-Storage) — the same failure mode as today's broken Storage uploads. Clean up
-test accounts through the experiment admin dashboard when done.
+**Required environment on the Vercel project `tasara` (preview + production).**
+`BLOB_STORE_ID`, `BLOB_READ_WRITE_TOKEN` (the tasara-docs store credentials),
+and `FIREBASE_SERVICE_ACCOUNT` (service-account JSON string, used only for ID
+token verification). All server-side; never in this repository. The service
+account key also stays at the gitignored `backend/service-account-tasara.json`.
 
-**Deployment.** New Vercel project `tasara-experiment` under team `hemabryt`
-(Hobby plan, no card), deployed from this folder via the CLI; the Blob store
-connection adds its env vars to both preview and production.
-
+**Verification.** `node scripts/verify-migration.mjs` from the repo root
+checks the deployed UI assets and runs the full authenticated document loop
+(`backend/scripts/smoke-doc-store.mjs`): minted throwaway sessions prove the
+401/403 gates, private-store reads, byte-exact proxy read, and deletion, then
+clean up after themselves. The rules unit suite still needs Java (absent on
+this machine); the re-approval test cases are committed for the next
+environment. Old test accounts from the experiment were removed from the
+shared database after the migration.

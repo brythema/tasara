@@ -1,10 +1,13 @@
-/* Tasara experiment: authenticated read path for seller documents.
+/* Tasara: authenticated read path for seller documents.
    The "tasara-docs" store is PRIVATE, so a browser cannot fetch a blob URL
    directly. The admin dashboard therefore loads documents through this
    endpoint: it reads the blob with the SDK's token-authenticated get() and
-   streams the bytes back. This is the only path that exposes a document,
-   and it only accepts seller-document URLs. */
+   streams the bytes back. This is the only path that exposes a document, it
+   only accepts seller-document URLs, and it requires the caller's Firebase ID
+   token (Bearer header or ?token=, since <img>/downloads cannot set headers)
+   WITH the admin custom claim. */
 import { get } from '@vercel/blob';
+import { verifyRequestToken } from './_lib/auth.js';
 
 function isSellerDocumentUrl(value) {
   try {
@@ -26,6 +29,16 @@ export default async function handler(req, res) {
   const url = new URL(req.url, 'http://localhost').searchParams.get('url') || '';
   if (!isSellerDocumentUrl(url)) {
     res.status(400).json({ error: 'A valid seller document URL is required.' });
+    return;
+  }
+
+  const claims = await verifyRequestToken(req);
+  if (!claims) {
+    res.status(401).json({ error: 'A valid session token is required.' });
+    return;
+  }
+  if (claims.admin !== true) {
+    res.status(403).json({ error: 'Only an Administrator may view this document.' });
     return;
   }
 
