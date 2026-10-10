@@ -1,5 +1,5 @@
 import { doc, getDoc, serverTimestamp, updateDoc } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
-import { COLLECTIONS, STORAGE_PATHS } from './constants.js';
+import { COLLECTIONS, SELLER_STATUSES, STORAGE_PATHS } from './constants.js';
 
 /* EXPERIMENT: Vercel Blob document store.
    Firebase Storage is unavailable on this project (free plan, no billing
@@ -74,10 +74,15 @@ export async function uploadSellerGovernmentId({ db, uid, file }) {
   const documentUrl = await uploadToBlob(path, file);
 
   try {
+    /* Re-uploading a document is a resubmission: the write re-enters the
+       review queue. The self-update rule only allows a seller write to end in
+       'pending', so an approved seller reaching this flow would be blocked —
+       the upload panel is only shown while not approved anyway. */
     await updateDoc(sellerRef, {
       governmentIdPath: documentUrl,
       governmentIdName: String(file.name || fileName),
       governmentIdType: file.type,
+      status: SELLER_STATUSES.PENDING,
       updatedAt: serverTimestamp()
     });
   } catch (error) {

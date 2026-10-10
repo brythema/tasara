@@ -54,12 +54,21 @@ service cloud.firestore {
         );
 
       // A user can edit basic profile details, but never their role or account number.
-      allow update: if isSelf(uid)
-        && resource.data.role == request.resource.data.role
-        && request.resource.data.accountNumber == resource.data.accountNumber
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-          'name', 'phone', 'address', 'updatedAt'
-        ]);
+      // An admin can correct the record, but never the role (identity split lives in the
+      // role collections) or the account number (stable identifier).
+      allow update: if (
+          isSelf(uid)
+          && resource.data.role == request.resource.data.role
+          && request.resource.data.accountNumber == resource.data.accountNumber
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'name', 'phone', 'address', 'updatedAt'
+          ])
+        )
+        || (
+          isAdmin()
+          && resource.data.role == request.resource.data.role
+          && request.resource.data.accountNumber == resource.data.accountNumber
+        );
 
       // Administrator removal from the dashboard. The sign-in account itself is
       // removed separately with the Admin SDK.
@@ -78,12 +87,20 @@ service cloud.firestore {
         && !request.resource.data.keys().hasAny(['tier', 'status'])
         && validAccountNumber(request.resource.data.accountNumber);
 
-      allow update: if isSelf(uid)
-        && currentUserRole(uid) == 'buyer'
-        && request.resource.data.accountNumber == resource.data.accountNumber
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-          'name', 'phone', 'address', 'updatedAt'
-        ]);
+      // A buyer can edit their own basic details (never role, account number, or email).
+      // An admin can correct the record but never the account number.
+      allow update: if (
+          isSelf(uid)
+          && currentUserRole(uid) == 'buyer'
+          && request.resource.data.accountNumber == resource.data.accountNumber
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'name', 'phone', 'address', 'updatedAt'
+          ])
+        )
+        || (
+          isAdmin()
+          && request.resource.data.accountNumber == resource.data.accountNumber
+        );
 
       allow delete: if isAdmin();
     }
@@ -108,8 +125,14 @@ service cloud.firestore {
         && request.resource.data.governmentIdName is string
         && request.resource.data.governmentIdType is string;
 
-      // Seller can maintain submitted details while not approved. They cannot self-approve,
-      // change the tier, change the account number, or alter Administrator review fields.
+      // Seller can maintain submitted details. They cannot self-approve, change the
+      // tier, change the account number, or alter Administrator review fields.
+      // Status semantics (re-approval requirement, backward-compatible with the
+      // live site's older client):
+      //   - An APPROVED seller's self-write must re-pend (details change -> review).
+      //   - A pending/rejected seller may keep the current status (the live site's
+      //     document re-upload flow writes no status) or explicitly re-pend.
+      // Self-approval and self-rejection stay impossible in every state.
       allow update: if (
           isAdmin()
           && request.resource.data.accountNumber == resource.data.accountNumber
@@ -118,13 +141,18 @@ service cloud.firestore {
           isSelf(uid)
           && currentUserRole(uid) == 'seller'
           && request.resource.data.tier == resource.data.tier
-          && request.resource.data.status == resource.data.status
           && request.resource.data.accountNumber == resource.data.accountNumber
+          && (
+            (resource.data.status == 'approved' && request.resource.data.status == 'pending')
+            || (resource.data.status != 'approved'
+                && (request.resource.data.status == resource.data.status
+                    || request.resource.data.status == 'pending'))
+          )
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
             'name', 'phone', 'address',
             'businessName', 'businessLocation',
             'governmentIdPath', 'governmentIdName', 'governmentIdType',
-            'updatedAt'
+            'status', 'updatedAt'
           ])
           && (
             resource.data.status != 'approved'

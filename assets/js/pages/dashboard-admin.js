@@ -9,6 +9,7 @@ import { getCurrentProfile, observeAuth } from '../firebase/auth.js';
 import { ROLES, SELLER_STATUSES, formatAccountNumber } from '../firebase/constants.js';
 import { observeBuyers, observeSellers, decideSeller, deleteAccount } from '../firebase/admin.js';
 import { saveSellerGovernmentId, getSellerGovernmentIdDownloadUrl } from '../firebase/seller-documents.js';
+import { saveRecordDetails } from '../firebase/profile-edits.js';
 import { getSellerTier } from '../firebase/tiers.js';
 
 /* ---------- small helpers ---------- */
@@ -222,6 +223,26 @@ function renderRecord() {
       </dl>
     </div>`;
 
+  const tierOptions = [1, 2, 3, 4].map(n =>
+    `<option value="${n}"${isSeller(r) && Number(r.tier) === n ? ' selected' : ''}>Tier ${n}</option>`).join('');
+  const editPanel = `
+    <div class="admin-panel">
+      <h3>Edit details</h3>
+      <div class="rec-edit-grid">
+        <label class="rec-edit-field"><span>Full name</span><input id="editRecName" value="${esc(r.name || '')}"></label>
+        <label class="rec-edit-field"><span>Phone</span><input id="editRecPhone" value="${esc(r.phone || '')}"></label>
+        <label class="rec-edit-field"><span>House address</span><input id="editRecAddress" value="${esc(r.address || '')}"></label>
+        ${isSeller(r) ? `
+        <label class="rec-edit-field"><span>Business name</span><input id="editRecBizName" value="${esc(r.businessName || '')}"></label>
+        <label class="rec-edit-field"><span>Business location</span><input id="editRecBizLoc" value="${esc(r.businessLocation || '')}"></label>
+        <label class="rec-edit-field"><span>Tier</span><select id="editRecTier">${tierOptions}</select>` : ''}
+      </div>
+      <p class="reg-hint" style="margin-top:10px;">Email is a sign-in property and is not edited here. Seller status changes use the review buttons.</p>
+      <div class="app-actions" style="justify-content:flex-start;margin-top:14px">
+        <button class="btn-save" type="button" data-act="editdetails" data-id="${esc(r.id)}">Save details</button>
+      </div>
+    </div>`;
+
   const standingPanel = isSeller(r) ? `
     <div class="admin-panel">
       <h3>Standing</h3>
@@ -310,6 +331,7 @@ function renderRecord() {
           </dl>
         </div>
         ${profilePanel}
+        ${editPanel}
         ${standingPanel}
       </div>
       <div class="rec-col">
@@ -495,6 +517,27 @@ async function act(kind, id) {
     } catch (error) {
       console.error(error);
       showError(error && error.message ? error.message : 'Could not open the ID document.');
+    }
+    return;
+  }
+  if (kind === 'editdetails') {
+    const readVal = inputId => { const el = $(inputId); return el ? el.value : ''; };
+    const changes = {
+      name: readVal('editRecName'),
+      phone: readVal('editRecPhone'),
+      address: readVal('editRecAddress'),
+      businessName: readVal('editRecBizName'),
+      businessLocation: readVal('editRecBizLoc')
+    };
+    const tierSelect = $('editRecTier');
+    if (tierSelect) changes.tier = Number(tierSelect.value);
+    clearError();
+    try {
+      await saveRecordDetails({ db: services.db, uid: id, role: r._role, changes });
+      toast('Details updated for ' + r.name + '.');
+    } catch (error) {
+      console.error(error);
+      showError(error && error.message ? error.message : 'Could not update the details.');
     }
     return;
   }

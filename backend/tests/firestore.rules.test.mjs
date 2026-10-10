@@ -132,6 +132,42 @@ await assertFails(updateDoc(doc(buyerDb, 'counters', 'accounts'), { last: 4 }));
 await assertFails(updateDoc(doc(buyerDb, 'counters', 'accounts'), { last: 3, extra: true }));
 await assertFails(deleteDoc(doc(buyerDb, 'counters', 'accounts')));
 
+/* ---------- re-approval: seller self-edits land back in pending ---------- */
+
+// seller-1 is approved now (admin approved it above). Its self-writes may
+// only end in 'pending', so editing details without resubmitting is blocked…
+await assertFails(updateDoc(doc(sellerDb, 'sellers', 'seller-1'), {
+  name: 'Seller One Jr', updatedAt: new Date()
+}));
+// …but an edit that resubmits (status -> pending) is allowed.
+await assertSucceeds(updateDoc(doc(sellerDb, 'sellers', 'seller-1'), {
+  name: 'Seller One Jr', status: 'pending', updatedAt: new Date()
+}));
+// Self-approval is still impossible in any state.
+await assertFails(updateDoc(doc(sellerDb, 'sellers', 'seller-1'), {
+  status: 'approved', updatedAt: new Date()
+}));
+// An admin may move a seller record back to pending themselves.
+await assertSucceeds(updateDoc(doc(adminDb, 'sellers', 'seller-1'), {
+  status: 'pending', updatedAt: new Date()
+}));
+// Live-site compatibility: a rejected seller re-uploading their document
+// writes no status field, and must stay allowed (status stays 'rejected').
+await assertSucceeds(updateDoc(doc(adminDb, 'sellers', 'seller-1'), {
+  status: 'rejected', updatedAt: new Date()
+}));
+await assertSucceeds(updateDoc(doc(sellerDb, 'sellers', 'seller-1'), {
+  governmentIdPath: 'https://example.com/resubmit.jpg', updatedAt: new Date()
+}));
+// Admins can correct buyer and user records (account number stays locked).
+await assertSucceeds(updateDoc(doc(adminDb, 'buyers', 'buyer-1'), {
+  phone: '+234 801 000 0001', updatedAt: new Date()
+}));
+await assertSucceeds(updateDoc(doc(adminDb, 'users', 'buyer-1'), {
+  address: '9 Updated Street', updatedAt: new Date()
+}));
+await assertFails(updateDoc(doc(adminDb, 'users', 'buyer-1'), { accountNumber: 99 }));
+
 /* ---------- administrator deletes ---------- */
 
 // Only the administrator may remove an account.

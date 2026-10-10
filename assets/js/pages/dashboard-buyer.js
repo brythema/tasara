@@ -2,6 +2,7 @@ import { getFirebaseServices } from '../firebase/firebase-client.js';
 import { observeAuth, getCurrentProfile } from '../firebase/auth.js';
 import { ROLES } from '../firebase/constants.js';
 import { BUYER_TELEGRAM_URL } from '../firebase/firebase-config.js';
+import { saveMyDetails } from '../firebase/profile-edits.js';
 
 function redirect(profile) {
   if (!profile) return window.location.replace('login.html');
@@ -9,6 +10,11 @@ function redirect(profile) {
   if (profile.role === ROLES.SELLER) return window.location.replace('dashboard-seller.html');
   if (profile.role === ROLES.ADMIN) return window.location.replace('dashboard-admin.html');
   window.location.replace('login.html');
+}
+
+function setRow(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = value || '—';
 }
 
 // Module scripts evaluate after the document is parsed, but a dependency's
@@ -20,22 +26,63 @@ const onReady = fn => (document.readyState === 'loading'
 onReady(async () => {
   try {
     const services = getFirebaseServices();
+
+    /* Edit-form refs declared before the observer so its async callback can
+       prefill them without depending on ordering. */
+    const editName = document.getElementById('editName');
+    const editPhone = document.getElementById('editPhone');
+    const editAddress = document.getElementById('editAddress');
+    const editBtn = document.getElementById('editDetailsBtn');
+    const editNote = document.getElementById('editDetailsNote');
+
     observeAuth(services, async user => {
       if (!user) return window.location.replace('login.html');
       const profile = await getCurrentProfile(services);
       if (!profile) return window.location.replace('login.html');
       if (profile.role !== ROLES.BUYER) return redirect(profile);
-      document.getElementById('userName').textContent = (profile.name || 'there').split(' ')[0];
-      document.getElementById('rowName').textContent = profile.name || '—';
-      document.getElementById('rowEmail').textContent = profile.email || '—';
-      document.getElementById('rowPhone').textContent = profile.phone || '—';
-      document.getElementById('rowAddress').textContent = profile.address || '—';
+      setRow('userName', (profile.name || 'there').split(' ')[0]);
+      setRow('rowName', profile.name);
+      setRow('rowEmail', profile.email);
+      setRow('rowPhone', profile.phone);
+      setRow('rowAddress', profile.address);
+      if (editName) editName.value = profile.name || '';
+      if (editPhone) editPhone.value = profile.phone || '';
+      if (editAddress) editAddress.value = profile.address || '';
+    });
+
+    editBtn?.addEventListener('click', async () => {
+      const user = services.auth.currentUser;
+      if (!user) return;
+      const note = msg => { if (editNote) editNote.textContent = msg; };
+      try {
+        editBtn.disabled = true;
+        editBtn.textContent = 'Saving…';
+        await saveMyDetails({
+          ...services,
+          uid: user.uid,
+          role: ROLES.BUYER,
+          changes: {
+            name: editName.value,
+            phone: editPhone.value,
+            address: editAddress.value
+          }
+        });
+        setRow('rowName', editName.value);
+        setRow('rowPhone', editPhone.value);
+        setRow('rowAddress', editAddress.value);
+        note('Details saved.');
+      } catch (error) {
+        note(error.message || 'Could not save your details.');
+      } finally {
+        editBtn.disabled = false;
+        editBtn.textContent = 'Save details';
+      }
     });
 
     document.getElementById('joinBtn')?.addEventListener('click', () => {
       const btn = document.getElementById('joinBtn');
       btn.classList.add('tilted');
-      setTimeout(() => window.open(BUYER_TELEGRAM_URL, '_blank', 'noopener'), 480);
+      window.open(BUYER_TELEGRAM_URL, '_blank', 'noopener');
     });
   } catch (error) {
     console.error(error);

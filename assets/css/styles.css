@@ -1011,6 +1011,22 @@ body.admin-theme { background: linear-gradient(165deg, var(--navy-deep) 0%, var(
 .decision-approved { background: rgba(46, 151, 167, 0.18); color: #7fd4e0; }
 .decision-rejected { background: rgba(162, 59, 46, 0.18); color: #ffb4a6; }
 
+/* Admin record — details editor */
+.rec-edit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 14px; }
+.rec-edit-field { display: flex; flex-direction: column; gap: 5px; }
+.rec-edit-field span { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; color: rgba(242, 238, 227, 0.55); }
+.rec-edit-field input,
+.rec-edit-field select {
+  background: rgba(242, 238, 227, 0.05); border: 1px solid var(--glass-dark-border, rgba(228, 199, 125, 0.18));
+  border-radius: var(--radius); padding: 9px 11px; width: 100%;
+  font-family: 'IBM Plex Sans', sans-serif; font-size: 0.9rem; color: var(--ivory);
+  transition: border-color 0.2s;
+}
+.rec-edit-field input:focus,
+.rec-edit-field select:focus { outline: none; border-color: var(--gold); }
+.rec-edit-field select option { color: var(--ink); }
+@media (max-width: 560px) { .rec-edit-grid { grid-template-columns: 1fr; } }
+
 /* ============================================================
    DASHBOARD SHARED
    ============================================================ */

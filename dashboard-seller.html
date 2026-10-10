@@ -77,6 +77,33 @@
     </div>
 
     <div class="dash-card">
+      <h3>Edit account details</h3>
+      <p class="helper">Saving your details sends them to an Administrator for re-review. Your sign-in email cannot be changed here.</p>
+      <div class="field" style="margin-top:14px;">
+        <label for="editName">Full name</label>
+        <input type="text" id="editName" autocomplete="name">
+      </div>
+      <div class="field">
+        <label for="editPhone">Phone</label>
+        <input type="text" id="editPhone" autocomplete="tel">
+      </div>
+      <div class="field">
+        <label for="editAddress">House address</label>
+        <input type="text" id="editAddress" autocomplete="street-address">
+      </div>
+      <div class="field">
+        <label for="editBizName">Business name</label>
+        <input type="text" id="editBizName">
+      </div>
+      <div class="field">
+        <label for="editBizLoc">Business location</label>
+        <input type="text" id="editBizLoc">
+      </div>
+      <button type="button" class="btn btn-primary" id="editDetailsBtn">Save details</button>
+      <div class="helper" id="editDetailsNote" style="margin-top:10px;"></div>
+    </div>
+
+    <div class="dash-card">
       <h3>Stewardship tier</h3>
       <div class="dash-row"><span>Tier</span><span id="rowTier">—</span></div>
       <div class="dash-row"><span>Liquidity stake</span><span id="rowStake">—</span></div>
