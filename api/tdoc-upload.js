@@ -59,6 +59,7 @@ export default async function handler(req, res) {
 
     const contentType = String(req.headers['content-type'] || 'application/octet-stream').split(';')[0].trim();
     const blob = await put(path, body, {
+      access: 'private',
       contentType,
       addRandomSuffix: false,
       allowOverwrite: false

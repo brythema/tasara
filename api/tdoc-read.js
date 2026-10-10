@@ -1,9 +1,10 @@
-/* Tasara experiment: token-authenticated read proxy for seller documents.
+/* Tasara experiment: authenticated read path for seller documents.
    The "tasara-docs" store is PRIVATE, so a browser cannot fetch a blob URL
    directly. The admin dashboard therefore loads documents through this
-   endpoint (same origin), which fetches the blob with the project's
-   BLOB_READ_WRITE_TOKEN and streams it back. This is the only path that
-   exposes a document, and it only accepts seller-document URLs. */
+   endpoint: it reads the blob with the SDK's token-authenticated get() and
+   streams the bytes back. This is the only path that exposes a document,
+   and it only accepts seller-document URLs. */
+import { get } from '@vercel/blob';
 
 function isSellerDocumentUrl(value) {
   try {
@@ -28,25 +29,23 @@ export default async function handler(req, res) {
     return;
   }
 
-  const token = process.env.BLOB_READ_WRITE_TOKEN;
-  if (!token) {
-    res.status(500).json({ error: 'The document service is not configured.' });
-    return;
-  }
-
   try {
-    const upstream = await fetch(url, { headers: { authorization: `Bearer ${token}` } });
-    res.status(upstream.status === 404 ? 404 : upstream.ok ? 200 : 502);
-    const contentType = upstream.headers.get('content-type');
-    if (contentType) res.setHeader('Content-Type', contentType);
-    res.setHeader('Cache-Control', 'no-store');
-    if (upstream.ok) {
-      const bytes = Buffer.from(await upstream.arrayBuffer());
-      res.setHeader('Content-Length', String(bytes.length));
-      res.end(bytes);
-    } else {
-      res.end();
+    const result = await get(url, { access: 'private' });
+    if (!result || result.statusCode !== 200) {
+      res.status(404).json({ error: 'The document is not available.' });
+      return;
     }
+
+    const chunks = [];
+    for await (const chunk of result.stream) chunks.push(chunk);
+    const bytes = Buffer.concat(chunks);
+
+    res.status(200);
+    res.setHeader('Content-Type', result.contentType || 'application/octet-stream');
+    res.setHeader('Content-Length', String(bytes.length));
+    /* Government documents must not linger in CDN or browser caches. */
+    res.setHeader('Cache-Control', 'no-store');
+    res.end(bytes);
   } catch (error) {
     console.error('tdoc-read failed:', error && error.message);
     res.status(500).json({ error: 'The document could not be retrieved.' });
