@@ -41,7 +41,7 @@ export default async function handler(req, res) {
     const bytes = Buffer.concat(chunks);
 
     res.status(200);
-    res.setHeader('Content-Type', result.contentType || 'application/octet-stream');
+    res.setHeader('Content-Type', result.blob && result.blob.contentType ? result.blob.contentType : 'application/octet-stream');
     res.setHeader('Content-Length', String(bytes.length));
     /* Government documents must not linger in CDN or browser caches. */
     res.setHeader('Cache-Control', 'no-store');
