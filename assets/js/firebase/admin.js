@@ -9,11 +9,8 @@ import {
   serverTimestamp,
   updateDoc
 } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
-import {
-  deleteObject,
-  ref
-} from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-storage.js';
 import { COLLECTIONS, SELLER_STATUSES } from './constants.js';
+import { deleteGovernmentIdBlob } from './seller-documents.js';
 
 /* The register loads in one pass. Keep the ceiling in mind: past this many
    accounts the list needs cursor paging instead of a wider limit. */
@@ -75,16 +72,15 @@ export async function decideSeller({ db, uid, status, reviewerUid, reviewNote = 
  *
  * @returns {Promise<{ authDeleted: boolean }>}
  */
-export async function deleteAccount({ db, storage, uid, role, governmentIdPath = '' }) {
+export async function deleteAccount({ db, uid, role, governmentIdPath = '' }) {
   if (!uid) throw new Error('A user id is required.');
   if (role !== 'buyer' && role !== 'seller') throw new Error('A valid account role is required.');
 
-  if (storage && governmentIdPath) {
-    try {
-      await deleteObject(ref(storage, governmentIdPath));
-    } catch (error) {
-      if (error && error.code !== 'storage/object-not-found') throw error;
-    }
+  if (governmentIdPath) {
+    /* EXPERIMENT: the government ID lives in the Vercel Blob store; a hard
+       failure removing it still aborts before any register record vanishes,
+       matching the original delete-order guarantee. A missing blob is fine. */
+    await deleteGovernmentIdBlob(governmentIdPath);
   }
 
   const collectionName = role === 'buyer' ? COLLECTIONS.BUYERS : COLLECTIONS.SELLERS;

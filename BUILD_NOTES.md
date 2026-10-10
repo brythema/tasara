@@ -45,3 +45,61 @@ The old `/api/*` calls were removed from the frontend. The website now uses Fire
 - ZIP archive integrity is checked before delivery.
 
 The Firebase Emulator Suite rules test could not be executed here because npm dependency installation did not complete in the available environment. Run `npm install` and then `npm run test:rules` from `backend/` on the development machine before deploying the rules.
+
+## EXPERIMENT — Vercel Blob document store (2026-10-10)
+
+**Why.** Firebase Storage is unusable on this account (free plan, billing card
+rejected by Firebase), so seller government-ID uploads fail while registration
+still works. This repository is an experiment: the document upload is routed to
+**Vercel Blob** instead of Firebase Storage. The live site (`brythema/tasara` @
+`main`, deployed to tasara.africa) is deliberately untouched.
+
+**What changed.**
+
+- `api/tdoc-upload.js` — Vercel function: raw-body POST (`?path=seller-government-id/<uid>/<file>`),
+  stores the file in the Vercel Blob store (`put`, `addRandomSuffix: false`),
+  returns the path. Path is regex-validated to our own shape only.
+- `api/tdoc-url.js` — Vercel function: returns a viewable URL for a stored path
+  (`getDownloadUrl`).
+- `api/tdoc-delete.js` — Vercel function: removes a stored path (`del`); a
+  missing blob is not an error.
+- `assets/js/firebase/seller-documents.js` — same four public functions, now
+  backed by the three endpoints above. Firestore fields are unchanged
+  (`governmentIdPath/Name/Type`), so seller signup and every admin flow keep
+  working without knowing which backend stores the file.
+- `assets/js/firebase/admin.js` — `deleteAccount` removes the document from
+  Vercel Blob before the register record (same order as before).
+- `assets/js/pages/dashboard-admin.js` — "View ID" button + inline image
+  preview in the seller record (the owner requirement: admin sees the image
+  next to the signup details they already have).
+- Document size cap: **4 MB** (live site keeps 10 MB). Vercel function request
+  bodies are capped near 4.5 MB, so the cap is set under it.
+
+**Security model (read before trusting this).**
+
+- Vercel Blob is a *public* static store: any blob URL is fetchable by anyone
+  who knows it. The document URL is therefore a **capability**: it contains
+  the Firebase UID (28 random characters, unguessable) plus a timestamp.
+- The Firestore rules stay strict: `sellers/{uid}` is readable only by the
+  seller themselves or an admin (`match /{document=**} allow read, write: if
+  false` deny-all catch-all). So the capability URL is never written where
+  ordinary users can read it — only owner + admin hold it.
+- The upload endpoint is same-origin and path-regex-locked to
+  `seller-government-id/<uid>/government-id-<ts>.(jpg|jpeg|png|webp|pdf)`.
+- **Caveat (accepted for the experiment):** the capability-URL model is weaker
+  than Firebase Storage rules. If the document must be truly private, move to
+  a private bucket (Supabase Storage free 1 GB, Backblaze B2 10 GB) or add
+  authenticated proxying.
+
+**Shared Firestore database.** This experiment uses the *same* Firebase
+project (`tasara-2c9f4e`) for auth, Firestore and admin claims — only the
+document *storage* changed. Consequence: a seller registered on
+`tasara-exp` appears in the live admin dashboard too, and the live dashboard's
+"Save ID" will fail for them (their document is in Blob, not Storage) — which
+is the same failure mode as today's broken Storage uploads. Clean up test
+accounts through the experiment admin dashboard when done.
+
+**Deployment.** New Vercel project under team `hemabryt` (Hobby plan, no
+card), linked to `brythema/tasara-experiment`. No credentials or environment
+variables are required: the Blob store is managed by Vercel itself.
+

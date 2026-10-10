@@ -8,7 +8,7 @@ import { getFirebaseServices } from '../firebase/firebase-client.js';
 import { getCurrentProfile, observeAuth } from '../firebase/auth.js';
 import { ROLES, SELLER_STATUSES, formatAccountNumber } from '../firebase/constants.js';
 import { observeBuyers, observeSellers, decideSeller, deleteAccount } from '../firebase/admin.js';
-import { saveSellerGovernmentId } from '../firebase/seller-documents.js';
+import { saveSellerGovernmentId, getSellerGovernmentIdDownloadUrl } from '../firebase/seller-documents.js';
 import { getSellerTier } from '../firebase/tiers.js';
 
 /* ---------- small helpers ---------- */
@@ -163,7 +163,10 @@ function renderPending() {
       <div class="app-meta">${esc(formatAccountNumber(r.accountNumber))} &middot; ${esc(r.businessLocation || '-')} &middot; ${esc(r.email)}</div>
       <div class="app-tier">Tier ${esc(String(r.tier))} ${esc(tierOf(r) ? tierOf(r).name : '')} &middot; ${esc(tierOf(r) ? tierOf(r).stakeDisplay : '')} stake &middot; ${esc(tierOf(r) ? tierOf(r).omniDisplay : '')} Omni</div>
       <div class="app-doc">${esc(r.governmentIdName || 'Government ID')}
-        ${r.governmentIdName ? `<button class="btn-save" type="button" data-act="idfile" data-id="${esc(r.id)}">Save ID</button>` : '<span class="missing-doc">ID not attached</span>'}
+        ${r.governmentIdName
+          ? `<button class="btn-save" type="button" data-act="viewid" data-id="${esc(r.id)}">View ID</button>
+             <button class="btn-save" type="button" data-act="idfile" data-id="${esc(r.id)}">Save ID</button>`
+          : '<span class="missing-doc">ID not attached</span>'}
       </div>
     </div>
     <div class="app-actions">
@@ -241,7 +244,12 @@ function renderRecord() {
              <dt>Type</dt><dd>${esc(r.governmentIdType || 'Government ID')}</dd>
              <dt>Stored at</dt><dd class="reg-num">${esc(r.governmentIdPath || '')}</dd>
            </dl>
+           ${String(r.governmentIdType || '').indexOf('image/') === 0
+             ? `<img id="docPreviewImg" src="" alt="Government ID document preview"
+                    style="max-width:100%;max-height:320px;margin-top:12px;border-radius:6px;">`
+             : ''}
            <div class="app-actions" style="justify-content:flex-start;margin-top:16px">
+             <button class="btn-save" type="button" data-act="viewid" data-id="${esc(r.id)}">View ID</button>
              <button class="btn-save" type="button" data-act="idfile" data-id="${esc(r.id)}">Save ID file</button>
            </div>`
         : `<div class="rec-note-box">No government ID is attached to this application.</div>`}
@@ -327,6 +335,19 @@ function renderRecord() {
   host.hidden = false;
   $('consoleView').hidden = true;
   $('adminHero').hidden = true;
+  loadDocPreview(r);
+}
+
+/* EXPERIMENT: the document preview loads from the Vercel Blob store through
+   the same URL helper the download buttons use. */
+async function loadDocPreview(r) {
+  const img = document.getElementById('docPreviewImg');
+  if (!img || !r || !r.governmentIdPath) return;
+  try {
+    img.src = await getSellerGovernmentIdDownloadUrl({ path: r.governmentIdPath });
+  } catch (_) {
+    img.remove();
+  }
 }
 function renderAll() { renderStats(); renderRoster(); renderPending(); renderDecided(); renderRecord(); }
 
@@ -411,7 +432,7 @@ async function confirmDelete() {
   button.textContent = 'Deleting…';
   clearError();
   try {
-    const result = await deleteAccount({ db: services.db, storage: services.storage, uid: id, role: r._role, governmentIdPath: r.governmentIdPath || '' });
+    const result = await deleteAccount({ db: services.db, uid: id, role: r._role, governmentIdPath: r.governmentIdPath || '' });
     RECORDS = RECORDS.filter(x => x.id !== id);
     if (wasOpen) { state.recordId = null; history.replaceState(null, '', location.pathname + location.search); }
     closeConfirm();
@@ -458,11 +479,22 @@ async function act(kind, id) {
   if (kind === 'idfile') {
     if (!r.governmentIdPath) { toast('No government ID is attached to this application.'); return; }
     try {
-      await saveSellerGovernmentId({ storage: services.storage, path: r.governmentIdPath, filename: r.governmentIdName || 'government-id' });
+      await saveSellerGovernmentId({ path: r.governmentIdPath, filename: r.governmentIdName || 'government-id' });
       toast('ID file saved.');
     } catch (error) {
       console.error(error);
       showError(error && error.message ? error.message : 'Could not save the ID file.');
+    }
+    return;
+  }
+  if (kind === 'viewid') {
+    if (!r.governmentIdPath) { toast('No government ID is attached to this application.'); return; }
+    try {
+      const url = await getSellerGovernmentIdDownloadUrl({ path: r.governmentIdPath });
+      window.open(url, '_blank', 'noopener');
+    } catch (error) {
+      console.error(error);
+      showError(error && error.message ? error.message : 'Could not open the ID document.');
     }
     return;
   }
