@@ -17,6 +17,17 @@ const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
    becoming a general file sink. */
 const SELLER_DOCUMENT_PATH = /^seller-government-id\/[A-Za-z0-9_-]{6,128}\/government-id-\d+\.(?:pdf|jpg|jpeg|png|webp)$/;
 
+/* Content types are derived from the (validated) file extension, never from
+   request headers — the header can be normalized away before the function
+   sees it. The upload is only ever a seller document, so this is complete. */
+const EXTENSION_CONTENT_TYPES = {
+  pdf: 'application/pdf',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  webp: 'image/webp'
+};
+
 function readRawBody(request) {
   return new Promise((resolve, reject) => {
     const chunks = [];
@@ -57,7 +68,11 @@ export default async function handler(req, res) {
       return;
     }
 
-    const contentType = String(req.headers['content-type'] || 'application/octet-stream').split(';')[0].trim();
+    /* The extension is already validated by SELLER_DOCUMENT_PATH, so mapping
+       it to a content type is safe and independent of the (unreliable)
+       request Content-Type header, which Blob/undici bodies can override. */
+    const extension = path.split('.').pop();
+    const contentType = EXTENSION_CONTENT_TYPES[extension] || 'application/octet-stream';
     const blob = await put(path, body, {
       access: 'private',
       contentType,

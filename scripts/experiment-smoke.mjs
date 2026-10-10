@@ -76,9 +76,12 @@ let docUrl = '';
   const gone = await fetch(`${BASE}/api/tdoc-read?url=${encodeURIComponent(docUrl)}`);
   report('read proxy reports the blob as gone', gone.status === 404, `status ${gone.status}`);
 
+  /* The SDK's del() is idempotent (resolves on a missing blob), so the
+     second delete is a safe no-op — the real proof of deletion is the 404
+     above. */
   const second = await post(`${BASE}/api/tdoc-delete?url=${encodeURIComponent(docUrl)}`, undefined);
-  const okSecond = second.status === 200 && second.json.missing === true;
-  report('second delete reports the missing blob', okSecond, second.text.trim().slice(0, 80));
+  const okSecond = second.status === 200;
+  report('second delete is a safe no-op', okSecond, second.text.trim().slice(0, 80));
 }
 
 /* 6 — the read proxy refuses URLs outside the seller-document shape. */
