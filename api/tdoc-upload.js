@@ -1,10 +1,12 @@
 import { put } from '@vercel/blob';
 
 /* Tasara experiment: Vercel Blob document store (replaces Firebase Storage).
-   Sellers upload the government ID straight to the browser function endpoint;
-   the function stores it in the Vercel Blob store and reports the path.
-   The path lands in Firestore exactly as the Storage-era path did, so every
-   caller and the admin dashboard keep working unchanged.
+   Sellers upload the government ID to this endpoint; the function stores it
+   in the PRIVATE "tasara-docs" Blob store (team hemabryt, region cpt1, token
+   from the BLOB_READ_WRITE_TOKEN project env) and reports the blob URL. That
+   URL — which embeds the unguessable Firebase UID — is what Firestore's
+   governmentIdPath now holds. Reading it always goes through api/tdoc-read.js
+   (token-authenticated), so the document is never exposed to the open web.
 
    Upload cap is 4 MB: Vercel serverless function request bodies are capped at
    about 4.5 MB, and a scanned ID fits comfortably in 4 MB. The client
@@ -57,7 +59,6 @@ export default async function handler(req, res) {
 
     const contentType = String(req.headers['content-type'] || 'application/octet-stream').split(';')[0].trim();
     const blob = await put(path, body, {
-      access: 'public',
       contentType,
       addRandomSuffix: false,
       allowOverwrite: false
