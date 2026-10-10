@@ -74,11 +74,15 @@ commits were cherry-picked onto `main`, then hardened.
 
 **Security model (production).**
 
-- All three tdoc endpoints verify a Firebase ID token server-side via
-  firebase-admin (`api/_lib/auth.js`): upload requires the document owner's
-  token; delete requires owner-or-admin; read requires the **admin custom
-  claim** (the experiment's "UI-gated" caveat is closed). Tokens ride a
-  Bearer header, or a `?token=` query parameter for `<img>`/download flows.
+- All three tdoc endpoints verify a Firebase ID token server-side
+  (`api/_lib/auth.js`): upload requires the document owner's token; delete
+  requires owner-or-admin; read requires the **admin custom claim** (the
+  experiment's "UI-gated" caveat is closed). Tokens ride a Bearer header, or
+  a `?token=` query parameter for `<img>`/download flows. Verification is
+  RS256 against the securetoken x509 public keys with jose v4 — firebase-admin
+  is intentionally NOT a function dependency (its jwks-rsa → jose@6 chain is
+  ESM-only and crashes Vercel's CommonJS function runtime; firebase-admin
+  stays in `backend/` for its scripts).
 - The "tasara-docs" store is private: raw blob URLs are not readable by the
   open web. Paths/URLs are regex-locked to
   `seller-government-id/<uid>/government-id-<ts>.(jpg|jpeg|png|webp|pdf)`.
@@ -86,11 +90,12 @@ commits were cherry-picked onto `main`, then hardened.
   linger in caches. The read token is a 1-hour admin ID token in a URL query —
   the same pattern Firebase Storage download URLs use for their file tokens.
 
-**Required environment on the Vercel project `tasara` (preview + production).**
-`BLOB_STORE_ID`, `BLOB_READ_WRITE_TOKEN` (the tasara-docs store credentials),
-and `FIREBASE_SERVICE_ACCOUNT` (service-account JSON string, used only for ID
-token verification). All server-side; never in this repository. The service
-account key also stays at the gitignored `backend/service-account-tasara.json`.
+**Required environment on the Vercel project `tasara` (production).**
+`BLOB_STORE_ID` and `BLOB_READ_WRITE_TOKEN` — the tasara-docs store
+credentials, shared with the experiment project. Server-side only; never in
+this repository. No other function env is needed: token verification uses
+public keys only. The service account key remains at the gitignored
+`backend/service-account-tasara.json` for the backend scripts.
 
 **Verification.** `node scripts/verify-migration.mjs` from the repo root
 checks the deployed UI assets and runs the full authenticated document loop
