@@ -34,6 +34,18 @@ onReady(async () => {
     const editAddress = document.getElementById('editAddress');
     const editBtn = document.getElementById('editDetailsBtn');
     const editNote = document.getElementById('editDetailsNote');
+    const editCard = document.getElementById('editDetailsCard');
+    const editToggle = document.getElementById('editDetailsToggle');
+
+    /* The editor is collapsed behind the toggle button, so it never clutters
+       the dashboard until the buyer asks for it. */
+    editToggle?.addEventListener('click', () => {
+      const opening = editCard.hidden;
+      editCard.hidden = !opening;
+      editToggle.textContent = opening ? 'Close editor' : 'Edit details';
+      if (opening) editName?.focus();
+      else editToggle.focus();
+    });
 
     observeAuth(services, async user => {
       if (!user) return window.location.replace('login.html');
