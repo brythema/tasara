@@ -23,7 +23,13 @@ function renderStatus(app) {
   const approvedArea = document.getElementById('approvedArea');
   const uploadArea = document.getElementById('sellerUploadArea');
   const note = document.getElementById('reviewNote');
+  const joinBtn = document.getElementById('joinSellerBtn');
+  const joinNote = document.getElementById('joinSellerNote');
   if (!pill || !copy) return;
+
+  const approved = app.status === SELLER_STATUSES.APPROVED;
+  if (joinBtn) joinBtn.disabled = !approved;
+  if (joinNote) joinNote.style.display = approved ? 'none' : 'block';
 
   pill.className = 'status-pill';
   if (app.status === SELLER_STATUSES.APPROVED) {
@@ -190,9 +196,12 @@ onReady(async () => {
     });
 
     /* Open synchronously inside the click: a delayed window.open is treated
-       as a weaker user gesture and can be popup-blocked. */
+       as a weaker user gesture and can be popup-blocked. Only approved
+       sellers may reach the community; renderStatus() keeps the button
+       disabled until the live status snapshot says approved. */
     document.getElementById('joinSellerBtn')?.addEventListener('click', () => {
       const btn = document.getElementById('joinSellerBtn');
+      if (btn.disabled) return;
       btn.classList.add('tilted');
       window.open(SELLER_TELEGRAM_URL, '_blank', 'noopener');
     });

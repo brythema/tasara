@@ -1075,6 +1075,10 @@ body.admin-theme { background: linear-gradient(165deg, var(--navy-deep) 0%, var(
 }
 .community-cta:hover { transform: translateY(-4px) scale(1.02); }
 .community-cta .cta-sub { font-size: 0.78rem; font-weight: 500; opacity: 0.82; }
+/* Locked state: the seller community button stays inactive until an
+   Administrator approves the application (renderStatus toggles it). */
+.community-cta[disabled] { cursor: not-allowed; opacity: 0.5; }
+.community-cta[disabled]:hover { transform: none; }
 
 /* ============================================================
    PHOTO FRAME — universal "show the whole image, blend the color"
